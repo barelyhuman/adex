@@ -5,6 +5,12 @@
   "private": true,
   "description": "",
   "keywords": [],
-  "author": "",
-  "license": "MIT"
+  "author": "reaper<ahoy@barelyhuman.dev>",
+  "scripts": {
+    "play": "cd playground; nr dev"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@antfu/ni": "^0.21.12"
+  }
 }

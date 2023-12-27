@@ -18,11 +18,19 @@ const buildTemplate = ({
   prefillData = {},
 } = {}) => {
   return `
-    <div id="root" mounter="${mounter}">${page}</div>
-    <script type="module" defer src="${clientEntry}"></script>
-    <script type="application/json" id="__dummy">${btoa(
-      JSON.stringify(prefillData, null, 2)
-    )}</script>
+    <!DOCTYPE html>
+    <html>
+      <head>
+      </head>
+      <body>
+        <div id="root" mounter="${mounter}">${page}</div>
+        <script type="module" defer src="${clientEntry}"></script>
+        <script type="application/json" id="__dummy">
+          ${btoa(JSON.stringify(prefillData, null, 2))}
+        </script>
+        ${viteDevServer ? `<script type="module" src="/@vite/client" />` : ""}
+      </body>
+    </html>
   `;
 };
 
@@ -64,9 +72,9 @@ async function buildHandler({ routes }) {
         loader: ({ req }) => any;
       };
 
-      let loadedData;
+      let loadedData = {};
       try {
-        "loader" in mod ? await mod.loader({ req }) : {};
+        loadedData = "loader" in mod ? await mod.loader({ req }) : {};
       } catch (err) {
         throw new Error(
           `Failed to execute loader for url:\`${req.url}\` with page module: \`${hasMappedPage.path}\``

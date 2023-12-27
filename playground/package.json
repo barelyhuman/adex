@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "@arrow-js/core": "1.0.0-alpha.9",
-    "arrow-render-to-string": "^0.0.3"
+    "arrow-render-to-string": "^0.0.3",
+    "ms": "^2.1.3",
+    "youch": "^3.3.3"
   }
 }
