@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "jsx": "react-jsx",
+    "allowJs": true,
     "jsxImportSource": "preact",
     "module": "ESNext",
     "target": "ESNext",
