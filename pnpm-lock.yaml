@@ -36,6 +36,9 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0(vite@5.0.10)
     devDependencies:
+      '@barelyhuman/prettier-config':
+        specifier: ^1.1.0
+        version: 1.1.0
       vite:
         specifier: ^5.0.10
         version: 5.0.10
@@ -55,6 +58,9 @@ importers:
         specifier: ^3.3.3
         version: 3.3.3
     devDependencies:
+      '@barelyhuman/prettier-config':
+        specifier: ^1.1.0
+        version: 1.1.0
       '@types/express':
         specifier: ^4.17.21
         version: 4.17.21
@@ -187,6 +193,10 @@ packages:
       '@babel/helper-validator-identifier': 7.22.20
       to-fast-properties: 2.0.0
     dev: false
+
+  /@barelyhuman/prettier-config@1.1.0:
+    resolution: {integrity: sha512-OlommcxHffkX+BtAsXP1ipK0WzKgNha5a+T+reNlNZZkHPZzZrLpQ23snAbubN4xZiV73Z6E+To02ZZka0eTTQ==}
+    dev: true
 
   /@esbuild/aix-ppc64@0.19.10:
     resolution: {integrity: sha512-Q+mk96KJ+FZ30h9fsJl+67IjNJm3x2eX+GBWGmocAKgzp27cowCOOqSdscX80s0SpdFXZnIv/+1xD1EctFx96Q==}

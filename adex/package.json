@@ -12,7 +12,9 @@
     "sirv": "^2.0.4",
     "vavite": "^3.0.0"
   },
+  "prettier": "@barelyhuman/prettier-config",
   "devDependencies": {
+    "@barelyhuman/prettier-config": "^1.1.0",
     "vite": "^5.0.10"
   },
   "peerDependencies": {
