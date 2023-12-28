@@ -69,6 +69,9 @@ function configInject() {
                 target: 'node18',
                 ssr: true,
                 outDir: 'dist/server',
+                rollupOptions: {
+                  external: ['adex/utils'],
+                },
               },
             },
           },
