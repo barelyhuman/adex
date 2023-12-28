@@ -15,7 +15,7 @@ async function render() {
 
   const modImport: any = await pageRoutes[mounterPath]()
   const Page = modImport.default
-  const mountable = html`${() => Page(loaderData)}`
+  const mountable = Page(loaderData)
   root.innerHTML = ''
   mountable(root)
 }
