@@ -28,6 +28,7 @@ export function adex() {
     virtualDefaultEntry({
       entry: '/src/index.html',
       virtualName: 'entry-template',
+      resolveName: false,
       defaultContent: readFileSync(
         join(__dirname, './runtime/index.html'),
         'utf8'
