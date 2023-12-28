@@ -3,7 +3,6 @@
   "version": "0.0.1-beta.1",
   "npmClient": "pnpm",
   "preid": "beta",
-  "packages": [
-    "adex"
-  ]
+  "changelog": true,
+  "packages": ["adex"]
 }
