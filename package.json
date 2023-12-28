@@ -1,16 +1,20 @@
 {
   "name": "adex-root",
-  "version": "0.0.0",
+  "version": "0.0.1-beta.0",
   "type": "module",
   "private": true,
   "description": "",
   "keywords": [],
   "author": "reaper<ahoy@barelyhuman.dev>",
   "scripts": {
-    "play": "cd playground; nr dev"
+    "play": "pnpm -r dev --filter='playground'",
+    "test": "echo 'true'",
+    "next": "bumpp",
+    "release": "pnpm -r publish --no-git-checks --filter='!playground'"
   },
   "license": "MIT",
   "devDependencies": {
-    "@antfu/ni": "^0.21.12"
+    "@antfu/ni": "^0.21.12",
+    "bumpp": "^9.2.1"
   }
 }
