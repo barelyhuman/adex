@@ -7,7 +7,7 @@
   "keywords": [],
   "author": "reaper<ahoy@barelyhuman.dev>",
   "scripts": {
-    "play": "pnpm -r dev --filter='playground'",
+    "play": "pnpm --filter='playground' -r dev",
     "test": "echo 'true'",
     "next": "lerna version --sync-workspace-lock",
     "release": "pnpm -r publish --no-git-checks --filter='!playground'"
