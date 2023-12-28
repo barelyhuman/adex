@@ -9,7 +9,7 @@
   "scripts": {
     "play": "pnpm -r dev --filter='playground'",
     "test": "echo 'true'",
-    "next": "bumpp",
+    "next": "lerna version --sync-workspace-lock",
     "release": "pnpm -r publish --no-git-checks --filter='!playground'"
   },
   "license": "MIT",
