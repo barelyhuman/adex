@@ -3,7 +3,13 @@ import viteDevServer from 'vavite/vite-dev-server'
 import { Options } from 'sirv'
 import { ms, Youch } from 'adex/utils'
 
+// VITE VIRTUAL
+// @ts-ignore
 import clientManifest from 'virtual:adex:client-manifest'
+// VITE VIRTUAL
+// @ts-ignore
+import entryTemplate from 'virtual:adex:entry-template'
+
 const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
 const assetBaseURL = import.meta.env.BASE_URL ?? '/'
 
@@ -17,21 +23,23 @@ const buildTemplate = ({
   clientEntry = '',
   prefillData = {},
 } = {}) => {
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-      </head>
-      <body>
-        <div id="root" mounter="${mounter}">${page}</div>
-        <script type="module" defer src="${clientEntry}"></script>
-        <script type="application/json" id="__dummy">
-          ${btoa(JSON.stringify(prefillData, null, 2))}
-        </script>
-        ${viteDevServer ? `<script type="module" src="/@vite/client" />` : ''}
-      </body>
-    </html>
-  `
+  return entryTemplate.replace('<!--app-head-->', '').replace(
+    '<!--app-body-->',
+    `
+      <div id="root" mounter="${mounter}">${page}</div>
+      <script type="module" defer src="${clientEntry}"></script>
+      <script type="application/json" id="__dummy">
+        ${btoa(JSON.stringify(prefillData, null, 2))}
+      </script>
+      ${
+        viteDevServer
+          ? `
+    <script type="module" src="/@vite/client" />
+    `
+          : ''
+      }
+    `
+  )
 }
 
 async function buildHandler({ routes }) {
