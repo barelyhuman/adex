@@ -1,4 +1,4 @@
-import { html } from '@arrow-js/core'
+import { html } from 'adex/html'
 
 const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
 let mounterPath

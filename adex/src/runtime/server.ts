@@ -1,7 +1,7 @@
-import { renderToString } from 'arrow-render-to-string'
+import { renderToString } from 'adex/ssr'
 import viteDevServer from 'vavite/vite-dev-server'
 import { Options } from 'sirv'
-import ms from 'ms'
+import { ms, Youch } from 'adex/utils'
 
 import clientManifest from 'virtual:adex:client-manifest'
 const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
@@ -93,15 +93,11 @@ async function buildHandler({ routes }) {
     } catch (err) {
       console.error(err)
       if (import.meta.env.DEV) {
-        const YouchMod = await import('youch')
-        if (YouchMod) {
-          const Youch = YouchMod.default
-          const youch = new Youch(err, req)
-          const html = await youch.toHTML()
-          res.writeHead(200, { 'content-type': 'text/html' })
-          res.write(html)
-          res.end()
-        }
+        const youch = new Youch(err, req)
+        const html = await youch.toHTML()
+        res.writeHead(200, { 'content-type': 'text/html' })
+        res.write(html)
+        res.end()
         return
       }
       res.statusCode = 500

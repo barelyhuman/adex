@@ -2,15 +2,23 @@
   "name": "adex",
   "version": "0.0.0",
   "type": "module",
-  "exports": "./src/vite.js",
+  "exports": {
+    "./vite": "./src/vite.js",
+    "./utils": "./src/utils.js",
+    "./ssr": "./src/ssr.js",
+    "./html": "./src/html.js",
+    "./reactive": "./src/reactive.js"
+  },
   "dependencies": {
     "@arrow-js/core": "1.0.0-alpha.9",
     "@babel/generator": "^7.23.6",
     "@babel/parser": "^7.23.6",
     "@babel/traverse": "^7.23.6",
     "arrow-render-to-string": "^0.0.3",
+    "ms": "^2.1.3",
     "sirv": "^2.0.4",
-    "vavite": "^3.0.0"
+    "vavite": "^3.0.0",
+    "youch": "^3.3.3"
   },
   "prettier": "@barelyhuman/prettier-config",
   "devDependencies": {

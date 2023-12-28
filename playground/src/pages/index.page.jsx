@@ -1,5 +1,5 @@
-import { reactive } from '@arrow-js/core'
-import { html } from '@arrow-js/core'
+import { reactive } from 'adex/reactive'
+import { html } from 'adex/html'
 
 export const loader = async () => {
   return {
