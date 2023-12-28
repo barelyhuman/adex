@@ -39,7 +39,7 @@ async function buildHandler({ routes }) {
     Object.entries(pageRoutes).map(([path, modImport]) => {
       let finalUrl = path
         .replace(/^[.]?[\/]?(pages)/, '')
-        .replace(/(\.page\.)(jsx|tsx)$/, '')
+        .replace(/(\.page\.)(js|ts)x?$/, '')
       if (finalUrl.endsWith('index')) {
         finalUrl = finalUrl.slice(0, -'index'.length)
       }
