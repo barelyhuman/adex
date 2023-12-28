@@ -9,6 +9,10 @@
     "./html": "./src/html.js",
     "./reactive": "./src/reactive.js"
   },
+  "publishConfig": {
+    "access": "public"
+  },
+  "prettier": "@barelyhuman/prettier-config",
   "dependencies": {
     "@arrow-js/core": "1.0.0-alpha.9",
     "@babel/generator": "^7.23.6",
@@ -20,9 +24,9 @@
     "vavite": "^3.0.0",
     "youch": "^3.3.3"
   },
-  "prettier": "@barelyhuman/prettier-config",
   "devDependencies": {
     "@barelyhuman/prettier-config": "^1.1.0",
+    "bumpp": "^9.2.1",
     "vite": "^5.0.10"
   },
   "peerDependencies": {

@@ -15,6 +15,9 @@
   "license": "MIT",
   "devDependencies": {
     "@antfu/ni": "^0.21.12",
+    "@lerna-lite/changed": "^3.1.0",
+    "@lerna-lite/cli": "^3.1.0",
+    "@lerna-lite/version": "^3.1.0",
     "bumpp": "^9.2.1"
   }
 }
