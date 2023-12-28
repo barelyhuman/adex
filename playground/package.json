@@ -1,0 +1,24 @@
+{
+  "name": "playground",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "",
+  "scripts": {
+    "dev": "vavite serve",
+    "build": "vavite build",
+    "start": "node dist/server"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@barelyhuman/prettier-config": "^1.1.0",
+    "@types/express": "^4.17.21",
+    "vavite": "^3.0.0",
+    "vite": "^5.0.10"
+  },
+  "prettier": "@barelyhuman/prettier-config",
+  "dependencies": {
+    "adex": "workspace:*"
+  }
+}
