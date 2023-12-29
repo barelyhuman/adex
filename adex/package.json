@@ -2,6 +2,9 @@
   "name": "adex",
   "version": "0.0.1-beta.6",
   "type": "module",
+  "bin": {
+    "adex": "./src/cli.js"
+  },
   "exports": {
     "./vite": "./src/vite.js",
     "./utils": "./src/utils.js",

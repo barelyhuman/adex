@@ -3,9 +3,6 @@
   "version": "0.0.1-beta.0",
   "type": "module",
   "private": true,
-  "bin": {
-    "adex": "./src/cli.js"
-  },
   "description": "",
   "keywords": [],
   "author": "reaper<ahoy@barelyhuman.dev>",
