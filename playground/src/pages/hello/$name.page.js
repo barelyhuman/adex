@@ -1,4 +1,4 @@
-import { html } from '@arrow-js/core'
+import { html, reactive } from '@arrow-js/core'
 
 export const loader = ({ req }) => {
   console.log({
@@ -10,5 +10,20 @@ export const loader = ({ req }) => {
 }
 
 export default function Page(loaderData) {
-  return html` <h1>Hello ${loaderData.greeting}</h1> `
+  const state = reactive({
+    color: false,
+  })
+
+  return html`
+    <h1 class="${() => (state.active ? 'active' : '')}">
+      Hello ${loaderData.greeting}
+    </h1>
+    <button
+      @click="${() => {
+        state.active = !state.active
+      }}"
+    >
+      Toggle Color
+    </button>
+  `
 }
