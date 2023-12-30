@@ -1,10 +1,9 @@
 import { renderToString } from 'adex/ssr'
-import viteDevServer from 'vavite/vite-dev-server'
-import { Options } from 'sirv'
-import { basename } from 'node:path'
-import { resolve } from 'node:path'
 import { getEntryHTML, ms, routerUtils, Youch } from 'adex/utils'
+import { basename, resolve } from 'node:path'
 import qs from 'node:querystring'
+import { Options } from 'sirv'
+import viteDevServer from 'vavite/vite-dev-server'
 
 // VITE VIRTUAL
 // @ts-ignore
@@ -115,11 +114,8 @@ async function buildHandler({ routes }) {
       try {
         loadedData = 'loader' in mod ? await mod.loader({ req }) : {}
       } catch (err) {
-        const newError = new Error(
-          `Failed to execute loader for url:\`${req.url}\` with page module: \`${hasMappedPage.relativePath}\``
-        )
-        newError.stack += '\n' + err.stack
-        throw newError
+        err.message = `Failed to execute loader for url:\`${req.url}\` with page module: \`${hasMappedPage.relativePath}\` with error ${err.message}`
+        throw err
       }
       const str = renderToString(mod.default(loadedData))
       const html = buildTemplate({
