@@ -19,6 +19,7 @@
   },
   "prettier": "@barelyhuman/prettier-config",
   "dependencies": {
+    "@arrow-js/core": "1.0.0-alpha.9",
     "adex": "workspace:*"
   }
 }

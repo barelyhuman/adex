@@ -1,11 +1,11 @@
 export { default as ms } from 'ms'
 export { default as Youch } from 'youch'
-import { existsSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 import * as routeManifest from '@barelyhuman/fs-route-manifest'
-import { match } from 'path-to-regexp'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { match } from 'path-to-regexp'
 
 export const routerUtils = {
   ...routeManifest,

@@ -1,4 +1,4 @@
-import { html } from 'adex/html'
+import { html } from '@arrow-js/core'
 
 export const loader = ({ req }) => {
   console.log({

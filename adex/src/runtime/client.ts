@@ -1,7 +1,9 @@
-import { html } from 'adex/html'
-
 const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
+
 let mounterPath
+
+render()
+
 async function render() {
   const root = document.getElementById('root')
   mounterPath = root.getAttribute('mounter')
@@ -12,15 +14,21 @@ async function render() {
   } catch (err) {
     console.error(err)
   }
-
-  const modImport: any = await pageRoutes[mounterPath]()
+  const pathInPageMap = normalizePath(mounterPath)
+  const modImport: any = await pageRoutes[pathInPageMap]()
   const Page = modImport.default
   const mountable = Page(loaderData)
   root.innerHTML = ''
   mountable(root)
 }
 
-render()
+function normalizePath(path) {
+  let result = String(path)
+  if (/^[./][/]?/.test(result)) {
+    result = result.replace(/^[./][/]?/, '')
+  }
+  return './' + result
+}
 
 if (import.meta.hot) {
   import.meta.hot.accept(mounterPath, newModule => {

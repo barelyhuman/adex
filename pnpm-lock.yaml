@@ -78,6 +78,9 @@ importers:
 
   playground:
     dependencies:
+      '@arrow-js/core':
+        specifier: 1.0.0-alpha.9
+        version: 1.0.0-alpha.9
       adex:
         specifier: workspace:*
         version: link:../adex

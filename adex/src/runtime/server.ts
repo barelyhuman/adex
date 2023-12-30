@@ -116,13 +116,13 @@ async function buildHandler({ routes }) {
         loadedData = 'loader' in mod ? await mod.loader({ req }) : {}
       } catch (err) {
         throw new Error(
-          `Failed to execute loader for url:\`${req.url}\` with page module: \`${hasMappedPage.path}\``
+          `Failed to execute loader for url:\`${req.url}\` with page module: \`${hasMappedPage.relativePath}\``
         )
       }
       const str = renderToString(mod.default(loadedData))
       const html = buildTemplate({
         page: str,
-        mounter: hasMappedPage.path,
+        mounter: hasMappedPage.relativePath,
         clientEntry: clientEntryPath,
         prefillData: loadedData,
       })
