@@ -26,6 +26,7 @@ class AdexCLIError extends Error {
 const templates = {
   default: 'barelyhuman/adex-default-template',
 }
+
 const spinner = ora(CLI_MESSAGES.BOOT()).start()
 try {
   const projectName = process.argv.slice(2)[0] || 'new-adex-project'

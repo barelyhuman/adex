@@ -1,11 +1,14 @@
-import { readFileSync } from 'node:fs'
+import fs, { readFileSync } from 'node:fs'
 import path, { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { vavite } from 'vavite'
-import fs from 'node:fs'
 import { adexLoader } from './lib/adex-loader.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+
+function getViteMajorVersion() {
+  return vite?.version ? Number(vite.version.split('.')[0]) : 2
+}
 
 export function adex() {
   return [
@@ -26,15 +29,6 @@ export function adex() {
       ),
     }),
     virtualDefaultEntry({
-      entry: '/src/index.html',
-      virtualName: 'entry-template',
-      resolveName: false,
-      defaultContent: readFileSync(
-        join(__dirname, './runtime/index.html'),
-        'utf8'
-      ),
-    }),
-    virtualDefaultEntry({
       entry: '/src/client.ts',
       virtualName: 'client-entry',
       defaultContent: readFileSync(
@@ -42,7 +36,6 @@ export function adex() {
         'utf8'
       ),
     }),
-    importRawHTML(),
     resolveClientManifest(),
   ]
 }
@@ -193,23 +186,6 @@ function resolveClientManifest() {
         .catch(() => {
           // Ignore if the file doesn't exist
         })
-    },
-  }
-}
-
-/**
- * @returns {import("vite").Plugin}
- */
-function importRawHTML() {
-  return {
-    name: 'adex-import-raw-html',
-    transform(code, id) {
-      if (id.endsWith('.html')) {
-        code = `export default \`${code}\``
-      }
-      return {
-        code,
-      }
     },
   }
 }

@@ -1,14 +1,15 @@
 import { renderToString } from 'adex/ssr'
 import viteDevServer from 'vavite/vite-dev-server'
 import { Options } from 'sirv'
-import { ms, Youch } from 'adex/utils'
+import { basename } from 'node:path'
+import { resolve } from 'node:path'
+import { ms, Youch, routerUtils, getEntryHTML } from 'adex/utils'
 
 // VITE VIRTUAL
 // @ts-ignore
 import clientManifest from 'virtual:adex:client-manifest'
-// VITE VIRTUAL
-// @ts-ignore
-import entryTemplate from 'virtual:adex:entry-template'
+
+import { normalizePath } from 'vite'
 
 const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
 const assetBaseURL = import.meta.env.BASE_URL ?? '/'
@@ -23,9 +24,11 @@ const buildTemplate = ({
   clientEntry = '',
   prefillData = {},
 } = {}) => {
-  return entryTemplate.replace('<!--app-head-->', '').replace(
-    '<!--app-body-->',
-    `
+  return getEntryHTML()
+    .replace('<!--app-head-->', '')
+    .replace(
+      '<!--app-body-->',
+      `
       <div id="root" mounter="${mounter}">${page}</div>
       <script type="module" defer src="${clientEntry}"></script>
       <script type="application/json" id="__dummy">
@@ -39,26 +42,40 @@ const buildTemplate = ({
           : ''
       }
     `
-  )
+    )
 }
 
 async function buildHandler({ routes }) {
-  const routeMap = Object.fromEntries(
-    Object.entries(pageRoutes).map(([path, modImport]) => {
-      let finalUrl = path
-        .replace(/^[.]?[\/]?(pages)/, '')
-        .replace(/(\.page\.)(js|ts)x?$/, '')
-      if (finalUrl.endsWith('index')) {
-        finalUrl = finalUrl.slice(0, -'index'.length)
+  const routesForManifest = Object.entries(pageRoutes).map(
+    ([path, modImport]) => {
+      return {
+        name: basename(path),
+        relativePath: normalizePath(path),
+        importer: modImport,
+        absolutePath: resolve(process.cwd(), path),
+        isDirectory: false,
       }
-      return [
-        finalUrl,
-        {
-          path,
-          importer: modImport,
-        },
-      ]
-    })
+    }
+  )
+
+  const routesWithURL = routerUtils.generateRoutes(
+    '/pages',
+    routesForManifest,
+    {
+      normalizer: (basePath, paths) => {
+        const normalized = routerUtils.normalizeURLPaths(
+          basePath,
+          paths,
+          routerUtils.defaultURLSorter
+        )
+        return normalized.map(x => {
+          x.url = x.url.replace(/\.page$/, '').replace(/\/index$/, '/')
+          return x
+        })
+      },
+      transformer: routerUtils.expressTransformer,
+      sorter: routerUtils.defaultURLSorter,
+    }
   )
 
   let clientEntryPath
@@ -73,7 +90,16 @@ async function buildHandler({ routes }) {
 
   return async (req, res) => {
     try {
-      const hasMappedPage = routeMap[req.url]
+      const hasMappedPage = routesWithURL.find(item => {
+        const matcher = routerUtils.paramMatcher(item.url, {
+          decode: decodeURIComponent,
+        })
+        const matched = matcher(req.url)
+        if (matched) {
+          req.params = matched.params
+        }
+        return matched
+      })
       if (!hasMappedPage) return res.end()
       const mod = (await hasMappedPage.importer()) as {
         default: (loaderData: any) => any

@@ -38,6 +38,9 @@ importers:
       '@babel/traverse':
         specifier: ^7.23.6
         version: 7.23.6
+      '@barelyhuman/fs-route-manifest':
+        specifier: ^0.0.6
+        version: 0.0.6
       arrow-render-to-string:
         specifier: ^0.0.3
         version: 0.0.3(@arrow-js/core@1.0.0-alpha.9)
@@ -50,6 +53,9 @@ importers:
       ora:
         specifier: ^8.0.1
         version: 8.0.1
+      path-to-regexp:
+        specifier: ^6.2.1
+        version: 6.2.1
       sirv:
         specifier: ^2.0.4
         version: 2.0.4
@@ -204,6 +210,12 @@ packages:
       '@babel/helper-string-parser': 7.23.4
       '@babel/helper-validator-identifier': 7.22.20
       to-fast-properties: 2.0.0
+    dev: false
+
+  /@barelyhuman/fs-route-manifest@0.0.6:
+    resolution: {integrity: sha512-uYL7FQz1EnXvLDW8FuQN79wog7yRiEF2LGh7oKfpOWmlRwiGXSoeuQ5T7onqBohPSPOl4rp55QVsHuwpYdSoZQ==}
+    dependencies:
+      path-to-regexp: 6.2.1
     dev: false
 
   /@barelyhuman/prettier-config@1.1.0:
@@ -3021,6 +3033,10 @@ packages:
       lru-cache: 10.1.0
       minipass: 5.0.0
     dev: true
+
+  /path-to-regexp@6.2.1:
+    resolution: {integrity: sha512-JLyh7xT1kizaEvcaXOQwOc2/Yhw6KZOvPf1S8401UyLk86CU79LN3vl7ztXGm/pZ+YjoyAJ4rxmHwbkBXJX+yw==}
+    dev: false
 
   /path-type@5.0.0:
     resolution: {integrity: sha512-5HviZNaZcfqP95rwpv+1HDgUamezbqdSYTyzjTvwtJSnIH+3vnbmWsItli8OFEndS984VT55M3jduxZbX351gg==}
