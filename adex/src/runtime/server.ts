@@ -4,6 +4,7 @@ import { Options } from 'sirv'
 import { basename } from 'node:path'
 import { resolve } from 'node:path'
 import { ms, Youch, routerUtils, getEntryHTML } from 'adex/utils'
+import qs from 'node:querystring'
 
 // VITE VIRTUAL
 // @ts-ignore
@@ -90,11 +91,15 @@ async function buildHandler({ routes }) {
 
   return async (req, res) => {
     try {
+      const [baseURL, query] = req.url.split('?')
+      req.query = Object.assign({}, qs.parse(query))
+
       const hasMappedPage = routesWithURL.find(item => {
         const matcher = routerUtils.paramMatcher(item.url, {
           decode: decodeURIComponent,
         })
-        const matched = matcher(req.url)
+
+        const matched = matcher(baseURL)
         if (matched) {
           req.params = matched.params
         }

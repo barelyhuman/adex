@@ -1,5 +1,9 @@
 import { html } from 'adex/html'
+
 export const loader = ({ req }) => {
+  console.log({
+    q: req.query,
+  })
   return {
     greeting: req.params.name,
   }
