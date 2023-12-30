@@ -6,10 +6,6 @@ import { adexLoader } from './lib/adex-loader.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-function getViteMajorVersion() {
-  return vite?.version ? Number(vite.version.split('.')[0]) : 2
-}
-
 export function adex() {
   return [
     adexLoader(),
