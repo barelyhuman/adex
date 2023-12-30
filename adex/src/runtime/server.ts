@@ -3,7 +3,7 @@ import viteDevServer from 'vavite/vite-dev-server'
 import { Options } from 'sirv'
 import { basename } from 'node:path'
 import { resolve } from 'node:path'
-import { ms, Youch, routerUtils, getEntryHTML } from 'adex/utils'
+import { getEntryHTML, ms, routerUtils, Youch } from 'adex/utils'
 import qs from 'node:querystring'
 
 // VITE VIRTUAL
@@ -115,9 +115,11 @@ async function buildHandler({ routes }) {
       try {
         loadedData = 'loader' in mod ? await mod.loader({ req }) : {}
       } catch (err) {
-        throw new Error(
+        const newError = new Error(
           `Failed to execute loader for url:\`${req.url}\` with page module: \`${hasMappedPage.relativePath}\``
         )
+        newError.stack += '\n' + err.stack
+        throw newError
       }
       const str = renderToString(mod.default(loadedData))
       const html = buildTemplate({
