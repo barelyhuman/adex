@@ -5,11 +5,11 @@ export const loader = ({ req }) => {
 }
 
 export default function Page(loaderData) {
-    return html`
-      From single
-      <pre>
+  return html`
+    From single
+    <pre>
       ${JSON.stringify(loaderData, null, 2)}
-    </pre>
-    `
-  }
-  
+    </pre
+    >
+  `
+}

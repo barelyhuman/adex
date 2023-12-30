@@ -24,7 +24,7 @@ export function getEntryHTML() {
     return htmlContent
   }
   try {
-    htmlContent = readFileSync('src/index.html',"utf8")
+    htmlContent = readFileSync('src/index.html', 'utf8')
   } catch (err) {
     console.warn(
       `src/index.html could not be read due to the following error:\n`,
