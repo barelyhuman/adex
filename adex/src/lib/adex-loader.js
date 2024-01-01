@@ -22,31 +22,77 @@ export function adexLoader() {
         treeShaking: true,
       })
 
-      const ast = parse(transformResult.code, {
-        sourceType: 'module',
+      const ast = moduleParser(transformResult.code)
+      const astWithoutLoader = removeLoaderFromAST(ast)
+      const astWithoutImports = removeUnusedImports(astWithoutLoader)
+      console.log({
+        ast,
+        astWithoutLoader,
+        astWithoutImports,
       })
 
-      traverse(ast, {
-        Identifier(path) {
-          if (path.node.name !== 'loader') return
-
-          if (path.parent) {
-            if (path.parent.type === 'ExportSpecifier') {
-              path.parentPath.remove()
-            }
-
-            if (path.parentPath.parentPath) {
-              if (
-                path.parentPath.parentPath.node.type === 'VariableDeclaration'
-              ) {
-                path.parentPath.parentPath.remove()
-              }
-            }
-          }
-        },
-      })
-
-      return generate(ast)
+      return generate(astWithoutImports)
     },
   }
+}
+
+function moduleParser(source) {
+  return parse(source, {
+    sourceType: 'module',
+  })
+}
+
+function removeLoaderFromAST(ast) {
+  traverse(ast, {
+    Identifier(path) {
+      if (path.node.name !== 'loader') return
+
+      if (path.parent) {
+        if (path.parent.type === 'ExportSpecifier') {
+          path.parentPath.remove()
+        }
+
+        if (path.parentPath.parentPath) {
+          if (path.parentPath.parentPath.node.type === 'VariableDeclaration') {
+            path.parentPath.parentPath.remove()
+          }
+        }
+      }
+    },
+  })
+  return moduleParser(generate(ast).code)
+}
+
+function removeUnusedImports(ast) {
+  const paths = new Map()
+
+  const visitor = {
+    ImportSpecifier(path) {
+      paths.set(path.node.local.name, path)
+    },
+    ImportDefaultSpecifier(path) {
+      paths.set(path.node.local.name, path)
+    },
+    Program: {
+      exit(path) {
+        for (let [key, path] of paths.entries()) {
+          const binding = path.scope.bindings[key]
+          if (!binding) continue
+          if (binding.references !== 0) continue
+          if (path.node.type == 'ImportDefaultSpecifier') {
+            path.parentPath.remove()
+          } else {
+            if (path.parent.specifiers.length === 1) {
+              path.parentPath.remove()
+            } else {
+              path.remove()
+            }
+          }
+        }
+      },
+    },
+  }
+
+  traverse(ast, visitor)
+  return moduleParser(generate(ast).code)
 }
