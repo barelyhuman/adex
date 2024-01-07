@@ -25,11 +25,6 @@ export function adexLoader() {
       const ast = moduleParser(transformResult.code)
       const astWithoutLoader = removeLoaderFromAST(ast)
       const astWithoutImports = removeUnusedImports(astWithoutLoader)
-      console.log({
-        ast,
-        astWithoutLoader,
-        astWithoutImports,
-      })
 
       return generate(astWithoutImports)
     },

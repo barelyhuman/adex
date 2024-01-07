@@ -15,7 +15,7 @@ async function render() {
     console.error(err)
   }
   const pathInPageMap = normalizePath(mounterPath)
-  const modImport: any = await pageRoutes[pathInPageMap]()
+  const modImport = await pageRoutes[pathInPageMap]()
   const Page = modImport.default
   const mountable = Page(loaderData)
   root.innerHTML = ''
