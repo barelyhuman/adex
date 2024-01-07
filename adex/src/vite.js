@@ -1,8 +1,9 @@
-import fs, { readFileSync } from 'node:fs'
+import fs, { existsSync, readFileSync } from 'node:fs'
 import path, { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { vavite } from 'vavite'
 import { adexLoader } from './lib/adex-loader.js'
+import { transformWithEsbuild } from 'vite'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -17,18 +18,20 @@ export function adex() {
       serveClientAssetsInDev: true,
     }),
     virtualDefaultEntry({
-      entry: '/src/server.ts',
+      entry: '/src/server.js',
       virtualName: 'server-entry',
+      resolveName: true,
       defaultContent: readFileSync(
-        join(__dirname, './runtime/server.ts'),
+        join(__dirname, './runtime/server.js'),
         'utf8'
       ),
     }),
     virtualDefaultEntry({
-      entry: '/src/client.ts',
+      entry: '/src/client.js',
       virtualName: 'client-entry',
+      resolveName: true,
       defaultContent: readFileSync(
-        join(__dirname, './runtime/client.ts'),
+        join(__dirname, './runtime/client.js'),
         'utf8'
       ),
     }),
@@ -48,6 +51,7 @@ function configInject() {
       if (env.mode !== 'multibuild') {
         return
       }
+
       return {
         appType: 'custom',
         buildSteps: [
@@ -88,13 +92,15 @@ function virtualDefaultEntry({
   resolveName = true,
 } = {}) {
   let fallback
-
+  let userPath
+  let exists = false
   return {
     name: 'adex:default-entry',
 
     enforce: 'pre',
 
     async configResolved(config) {
+      userPath = path.resolve(config.root, entry.slice(1)).replace(/\\/g, '/')
       if (resolveName) {
         fallback = path.resolve(config.root, entry.slice(1)).replace(/\\/g, '/')
       } else {
@@ -108,13 +114,16 @@ function virtualDefaultEntry({
         id === '/virtual:adex:' + virtualName ||
         id === entry
       ) {
-        const userEntry = await this.resolve(entry)
-        return userEntry ?? fallback
+        exists = existsSync(userPath)
+        if (exists) {
+          return await this.resolve(entry)
+        }
+        return fallback
       }
     },
 
     async load(id) {
-      if (id === fallback) {
+      if (id === fallback && !exists) {
         return defaultContent
       }
     },

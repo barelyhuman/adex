@@ -2,7 +2,7 @@ import { renderToString } from 'adex/ssr'
 import { getEntryHTML, ms, routerUtils, Youch } from 'adex/utils'
 import { basename, resolve } from 'node:path'
 import qs from 'node:querystring'
-import { Options } from 'sirv'
+
 import viteDevServer from 'vavite/vite-dev-server'
 
 // VITE VIRTUAL
@@ -14,7 +14,7 @@ import { normalizePath } from 'vite'
 const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
 const assetBaseURL = import.meta.env.BASE_URL ?? '/'
 
-export const sirvOptions: Options = {
+export const sirvOptions = {
   maxAge: ms('1m'),
 }
 
@@ -69,7 +69,13 @@ async function buildHandler({ routes }) {
           routerUtils.defaultURLSorter
         )
         return normalized.map(x => {
-          x.url = x.url.replace(/\.page$/, '').replace(/\/index$/, '/')
+          x.url = x.url
+            .replace(/\.page$/, '')
+            .replace(/\/index$/, '/')
+            .replace(/\/$/, '')
+          if (!x.url) {
+            x.url = '/'
+          }
           return x
         })
       },
@@ -105,10 +111,7 @@ async function buildHandler({ routes }) {
         return matched
       })
       if (!hasMappedPage) return res.end()
-      const mod = (await hasMappedPage.importer()) as {
-        default: (loaderData: any) => any
-        loader: ({ req }) => any
-      }
+      const mod = await hasMappedPage.importer()
 
       let loadedData = {}
       try {
