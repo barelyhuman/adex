@@ -3,6 +3,7 @@ import { getEntryHTML, ms, routerUtils, Youch } from 'adex/utils'
 import { basename, resolve } from 'node:path'
 import qs from 'node:querystring'
 
+import middleware from 'virtual:adex:middleware-entry'
 import viteDevServer from 'vavite/vite-dev-server'
 
 // VITE VIRTUAL
@@ -98,6 +99,17 @@ async function buildHandler({ routes }) {
     try {
       const [baseURL, query] = req.url.split('?')
       req.query = Object.assign({}, qs.parse(query))
+
+      let _resolve
+      const promise = new Promise(resolve => {
+        _resolve = resolve
+      })
+
+      middleware(req, res, () => {
+        _resolve()
+      })
+
+      await promise
 
       const hasMappedPage = routesWithURL.find(item => {
         const matcher = routerUtils.paramMatcher(item.url, {

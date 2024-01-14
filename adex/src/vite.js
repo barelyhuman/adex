@@ -35,6 +35,15 @@ export function adex() {
         'utf8'
       ),
     }),
+    virtualDefaultEntry({
+      entry: '/src/middleware.js',
+      virtualName: 'middleware-entry',
+      resolveName: true,
+      defaultContent: readFileSync(
+        join(__dirname, './runtime/middleware.js'),
+        'utf8'
+      ),
+    }),
     resolveClientManifest(),
   ]
 }
