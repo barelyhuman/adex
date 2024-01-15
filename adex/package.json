@@ -26,7 +26,6 @@
     "ora": "^8.0.1",
     "path-to-regexp": "^6.2.1",
     "sirv": "^2.0.4",
-    "vavite": "^3.0.0",
     "youch": "^3.3.3"
   },
   "devDependencies": {

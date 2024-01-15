@@ -2,9 +2,8 @@ import { renderToString } from 'adex/ssr'
 import { getEntryHTML, ms, routerUtils, Youch } from 'adex/utils'
 import { basename, resolve } from 'node:path'
 import qs from 'node:querystring'
-
 import middleware from 'virtual:adex:middleware-entry'
-import viteDevServer from 'vavite/vite-dev-server'
+const viteDevServer = import.meta.env.DEV
 
 // VITE VIRTUAL
 // @ts-ignore
