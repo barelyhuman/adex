@@ -13,6 +13,7 @@ import clientManifest from 'virtual:adex:client-manifest'
 import { normalizePath } from 'vite'
 
 const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
+const apiRoutes = import.meta.glob('./pages/**/*.api.{js,ts,jsx,tsx}')
 const assetBaseURL = import.meta.env.BASE_URL ?? '/'
 
 export const sirvOptions = {
@@ -59,6 +60,18 @@ async function buildHandler({ routes }) {
     }
   )
 
+  const apiRouteManifest = Object.entries(apiRoutes).map(
+    ([path, modImport]) => {
+      return {
+        name: basename(path),
+        relativePath: normalizePath(path),
+        importer: modImport,
+        absolutePath: resolve(process.cwd(), path),
+        isDirectory: false,
+      }
+    }
+  )
+
   const routesWithURL = routerUtils.generateRoutes(
     '/pages',
     routesForManifest,
@@ -85,6 +98,32 @@ async function buildHandler({ routes }) {
     }
   )
 
+  const apiRoutesWithURL = routerUtils.generateRoutes(
+    '/pages',
+    apiRouteManifest,
+    {
+      normalizer: (basePath, paths) => {
+        const normalized = routerUtils.normalizeURLPaths(
+          basePath,
+          paths,
+          routerUtils.defaultURLSorter
+        )
+        return normalized.map(x => {
+          x.url = x.url
+            .replace(/\.api$/, '')
+            .replace(/\/index$/, '/')
+            .replace(/\/$/, '')
+          if (!x.url) {
+            x.url = '/'
+          }
+          return x
+        })
+      },
+      transformer: routerUtils.expressTransformer,
+      sorter: routerUtils.defaultURLSorter,
+    }
+  )
+
   let clientEntryPath
   if (viteDevServer) {
     clientEntryPath = assetBaseURL + 'virtual:adex:client-entry'
@@ -93,6 +132,35 @@ async function buildHandler({ routes }) {
     if (hasEntryFile) {
       clientEntryPath = hasEntryFile.file
     }
+  }
+
+  const pageLoader = async (mod, handlerMeta, req, res) => {
+    let loadedData = {}
+    try {
+      loadedData = 'loader' in mod ? await mod.loader({ req }) : {}
+    } catch (err) {
+      err.message = `Failed to execute loader for url:\`${req.url}\` with page module: \`${handlerMeta.relativePath}\` with error ${err.message}`
+      throw err
+    }
+    const str = renderToString(mod.default(loadedData))
+    const html = buildTemplate({
+      page: str,
+      mounter: handlerMeta.relativePath,
+      clientEntry: clientEntryPath,
+      prefillData: loadedData,
+    })
+    res.setHeader('content-type', 'text/html')
+    res.write(html)
+    res.end()
+  }
+
+  const apiLoader = async (mod, handlerMeta, req, res) => {
+    const methodKey = req.method.toLowerCase()
+    if (methodKey in mod) {
+      await mod[methodKey]({ req, res })
+      return
+    }
+    return res.end()
   }
 
   return async (req, res) => {
@@ -111,6 +179,8 @@ async function buildHandler({ routes }) {
 
       await promise
 
+      let mappedHandler
+      let usingApi = false
       const hasMappedPage = routesWithURL.find(item => {
         const matcher = routerUtils.paramMatcher(item.url, {
           decode: decodeURIComponent,
@@ -122,26 +192,37 @@ async function buildHandler({ routes }) {
         }
         return matched
       })
-      if (!hasMappedPage) return res.end()
-      const mod = await hasMappedPage.importer()
 
-      let loadedData = {}
-      try {
-        loadedData = 'loader' in mod ? await mod.loader({ req }) : {}
-      } catch (err) {
-        err.message = `Failed to execute loader for url:\`${req.url}\` with page module: \`${hasMappedPage.relativePath}\` with error ${err.message}`
-        throw err
+      mappedHandler = hasMappedPage
+
+      if (!hasMappedPage) {
+        const hasMappedAPI = apiRoutesWithURL.find(item => {
+          const matcher = routerUtils.paramMatcher(item.url, {
+            decode: decodeURIComponent,
+          })
+
+          const matched = matcher(baseURL)
+          if (matched) {
+            req.params = matched.params
+          }
+          return matched
+        })
+
+        if (!hasMappedAPI) {
+          return res.end()
+        }
+
+        usingApi = true
+        mappedHandler = hasMappedAPI
       }
-      const str = renderToString(mod.default(loadedData))
-      const html = buildTemplate({
-        page: str,
-        mounter: hasMappedPage.relativePath,
-        clientEntry: clientEntryPath,
-        prefillData: loadedData,
-      })
-      res.setHeader('content-type', 'text/html')
-      res.write(html)
-      res.end()
+
+      const mod = await mappedHandler.importer()
+
+      if (usingApi) {
+        await apiLoader(mod, mappedHandler, req, res)
+      } else {
+        await pageLoader(mod, mappedHandler, req, res)
+      }
     } catch (err) {
       console.error(err)
       if (import.meta.env.DEV) {
