@@ -8,7 +8,8 @@
   "exports": {
     "./vite": "./src/vite.js",
     "./utils": "./src/utils.js",
-    "./ssr": "./src/ssr.js"
+    "./ssr": "./src/ssr.js",
+    "./node-static": "./src/node-static.js"
   },
   "publishConfig": {
     "access": "public"

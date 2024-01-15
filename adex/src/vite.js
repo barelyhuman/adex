@@ -1,8 +1,8 @@
-import fs, { existsSync, readFileSync } from 'node:fs'
+import fs, { readFileSync } from 'node:fs'
 import path, { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { build } from 'vite'
 import { adexLoader } from './lib/adex-loader.js'
-import { build, mergeConfig } from 'vite'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -96,13 +96,16 @@ function adexMultibuild(options) {
         if (command !== 'build') return
         await build({
           appType: 'custom',
+          define: {
+            __ADEX_CLIENT_BUILD_OUTPUT_DIR: JSON.stringify('dist/client'),
+          },
           build: {
             target: 'node18',
             outDir: 'dist/server',
             ssr: true,
             rollupOptions: {
               input: {
-                server: 'virtual:adex:runner-entry',
+                index: 'virtual:adex:runner-entry',
                 handler: 'virtual:adex:server-entry',
               },
               external: ['adex/utils'],

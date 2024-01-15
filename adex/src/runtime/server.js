@@ -162,7 +162,7 @@ async function buildHandler({ routes }) {
     return res.end()
   }
 
-  return async (req, res) => {
+  return async (req, res, next) => {
     try {
       const [baseURL, query] = req.url.split('?')
       req.query = Object.assign({}, qs.parse(query))
@@ -235,7 +235,8 @@ async function buildHandler({ routes }) {
       res.statusCode = 500
       res.write('Something went wrong!')
       res.end()
-      return
+    } finally {
+      next()
     }
   }
 }
