@@ -1,7 +1,7 @@
 import fs, { readFileSync } from 'node:fs'
 import path, { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { build } from 'vite'
+import { build, loadConfigFromFile, mergeConfig } from 'vite'
 import { adexLoader } from './lib/adex-loader.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -54,12 +54,12 @@ export function adex() {
  * @returns {import("vite").Plugin[]}
  */
 function adexMultibuild(options) {
-  let currMode, resolvedConfig, command
+  let command
   return [
     {
       name: 'adex-multibuild',
       enforce: 'post',
-      config(_config) {
+      config() {
         return {
           appType: 'custom',
           build: {
@@ -74,85 +74,61 @@ function adexMultibuild(options) {
         }
       },
       configResolved(config) {
-        currMode = config.mode
-        resolvedConfig = config
         command = config.command
       },
       configureServer(server) {
         return async () => {
-          const mod = await server.ssrLoadModule('virtual:adex:server-entry')
           server.middlewares.use(async (req, res, next) => {
-            await mod.default(req, res)
-            if (!res.writableEnded) {
-              res.write('Not Found')
-              res.statusCode = 404
-              res.end()
-              next()
+            try {
+              const mod = await server.ssrLoadModule(
+                'virtual:adex:server-entry'
+              )
+              await mod.default(req, res)
+              if (!res.writableEnded) {
+                res.write('Not Found')
+                res.statusCode = 404
+                res.end()
+                next()
+              }
+            } catch (err) {
+              if (err instanceof Error) {
+                server.ssrFixStacktrace(err)
+              }
             }
           })
         }
       },
       async closeBundle() {
         if (command !== 'build') return
-        await build({
-          appType: 'custom',
-          define: {
-            __ADEX_CLIENT_BUILD_OUTPUT_DIR: JSON.stringify('dist/client'),
-          },
-          build: {
-            target: 'node18',
-            outDir: 'dist/server',
-            ssr: true,
-            rollupOptions: {
-              input: {
-                index: 'virtual:adex:runner-entry',
-                handler: 'virtual:adex:server-entry',
-              },
-              external: ['adex/utils'],
+
+        const config = await loadConfigFromFile()
+        config.config.plugins = config.config.plugins
+          .flat(2)
+          .filter(x => x.name != 'adex-multibuild')
+
+        await build(
+          mergeConfig(config.config, {
+            appType: 'custom',
+            configFile: false,
+            define: {
+              __ADEX_CLIENT_BUILD_OUTPUT_DIR: JSON.stringify('dist/client'),
             },
-          },
-          configFile: false,
-          plugins: [
-            adexLoader(),
-            virtualDefaultEntry({
-              entry: '/src/runner.js',
-              virtualName: 'runner-entry',
-              resolveName: true,
-              defaultContent: readFileSync(
-                join(__dirname, './runtime/runner.js'),
-                'utf8'
-              ),
-            }),
-            virtualDefaultEntry({
-              entry: '/src/server.js',
-              virtualName: 'server-entry',
-              resolveName: true,
-              defaultContent: readFileSync(
-                join(__dirname, './runtime/server.js'),
-                'utf8'
-              ),
-            }),
-            virtualDefaultEntry({
-              entry: '/src/client.js',
-              virtualName: 'client-entry',
-              resolveName: true,
-              defaultContent: readFileSync(
-                join(__dirname, './runtime/client.js'),
-                'utf8'
-              ),
-            }),
-            virtualDefaultEntry({
-              entry: '/src/middleware.js',
-              virtualName: 'middleware-entry',
-              resolveName: true,
-              defaultContent: readFileSync(
-                join(__dirname, './runtime/middleware.js'),
-                'utf8'
-              ),
-            }),
-            resolveClientManifest(),
-          ],
-        })
+            build: {
+              target: 'node18',
+              outDir: 'dist/server',
+              ssr: true,
+              rollupOptions: {
+                input: {
+                  index: 'virtual:adex:runner-entry',
+                  handler: 'virtual:adex:server-entry',
+                },
+                external: ['adex/utils'],
+              },
+            },
+          })
+        )
+
+        await new Promise(r => process.stdout.write('', r))
       },
     },
   ]
