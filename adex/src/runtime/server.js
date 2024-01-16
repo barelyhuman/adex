@@ -126,10 +126,11 @@ async function buildHandler({ routes }) {
   let clientEntryPath
   if (viteDevServer) {
     clientEntryPath = assetBaseURL + 'virtual:adex:client-entry'
-  } else {
-    const hasEntryFile = Object.values(clientManifest).find(v => v.isEntry)
-    if (hasEntryFile) {
-      clientEntryPath = hasEntryFile.file
+  } else if (clientManifest) {
+      const hasEntryFile = Object.values(clientManifest).find(v => v.isEntry)
+      if (hasEntryFile) {
+        clientEntryPath = hasEntryFile.file
+      }
     }
   }
 

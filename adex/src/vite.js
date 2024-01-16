@@ -63,6 +63,7 @@ function adexMultibuild(options) {
         return {
           appType: 'custom',
           build: {
+            ssr: false,
             manifest: 'vite.manifest.json',
             outDir: 'dist/client',
             rollupOptions: {
@@ -177,13 +178,19 @@ function virtualDefaultEntry({
 //https://github.com/rakkasjs/rakkasjs/blob/1c552cc19e4f9165cf5d001fe3af5bc86fe7f527/packages/rakkasjs/src/vite-plugin/resolve-client-manifest.ts#L11
 function resolveClientManifest() {
   let resolvedConfig
-
+  let dev = false
   let moduleId = 'virtual:adex:client-manifest'
   return {
     name: 'adex:resolve-client-manifest',
     enforce: 'pre',
+    config(cfg, env) {
+      dev = env.command === 'serve'
+    },
     resolveId(id, _, options) {
       if (id === moduleId) {
+        if (dev || !options.ssr) {
+          return id
+        }
         return this.resolve(
           path.resolve(resolvedConfig.root, 'dist/manifest.json')
         )
@@ -193,16 +200,6 @@ function resolveClientManifest() {
     load(id) {
       if (id === moduleId) {
         return 'export default undefined'
-      }
-    },
-
-    config(config, env) {
-      if (!config.build?.ssr) {
-        return {
-          build: {
-            manifest: 'vite.manifest.json',
-          },
-        }
       }
     },
 
