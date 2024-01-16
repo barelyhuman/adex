@@ -2,9 +2,8 @@ import { renderToString } from 'adex/ssr'
 import { getEntryHTML, ms, routerUtils, Youch } from 'adex/utils'
 import { basename, resolve } from 'node:path'
 import qs from 'node:querystring'
-
 import middleware from 'virtual:adex:middleware-entry'
-import viteDevServer from 'vavite/vite-dev-server'
+const viteDevServer = import.meta.env.DEV
 
 // VITE VIRTUAL
 // @ts-ignore
@@ -127,7 +126,7 @@ async function buildHandler({ routes }) {
   let clientEntryPath
   if (viteDevServer) {
     clientEntryPath = assetBaseURL + 'virtual:adex:client-entry'
-  } else {
+  } else if (clientManifest) {
     const hasEntryFile = Object.values(clientManifest).find(v => v.isEntry)
     if (hasEntryFile) {
       clientEntryPath = hasEntryFile.file
@@ -163,7 +162,7 @@ async function buildHandler({ routes }) {
     return res.end()
   }
 
-  return async (req, res) => {
+  return async (req, res, next) => {
     try {
       const [baseURL, query] = req.url.split('?')
       req.query = Object.assign({}, qs.parse(query))
@@ -236,7 +235,8 @@ async function buildHandler({ routes }) {
       res.statusCode = 500
       res.write('Something went wrong!')
       res.end()
-      return
+    } finally {
+      next()
     }
   }
 }

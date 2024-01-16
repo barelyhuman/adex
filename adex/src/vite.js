@@ -1,24 +1,17 @@
-import fs, { existsSync, readFileSync } from 'node:fs'
+import fs, { readFileSync } from 'node:fs'
 import path, { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { vavite } from 'vavite'
+import { build, loadConfigFromFile, mergeConfig } from 'vite'
 import { adexLoader } from './lib/adex-loader.js'
-import { transformWithEsbuild } from 'vite'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export function adex() {
   return [
+    adexMultibuild(),
     adexLoader(),
-    configInject(),
-    vavite({
-      clientAssetsDir: './dist/client',
-      handlerEntry: 'virtual:adex:server-entry',
-      reloadOn: 'static-deps-change',
-      serveClientAssetsInDev: true,
-    }),
     virtualDefaultEntry({
-      entry: '/src/server.js',
+      entry: '/src/server',
       virtualName: 'server-entry',
       resolveName: true,
       defaultContent: readFileSync(
@@ -27,7 +20,7 @@ export function adex() {
       ),
     }),
     virtualDefaultEntry({
-      entry: '/src/client.js',
+      entry: '/src/client',
       virtualName: 'client-entry',
       resolveName: true,
       defaultContent: readFileSync(
@@ -36,11 +29,20 @@ export function adex() {
       ),
     }),
     virtualDefaultEntry({
-      entry: '/src/middleware.js',
+      entry: '/src/middleware',
       virtualName: 'middleware-entry',
       resolveName: true,
       defaultContent: readFileSync(
         join(__dirname, './runtime/middleware.js'),
+        'utf8'
+      ),
+    }),
+    virtualDefaultEntry({
+      entry: '/src/runner',
+      virtualName: 'runner-entry',
+      resolveName: true,
+      defaultContent: readFileSync(
+        join(__dirname, './runtime/runner.js'),
         'utf8'
       ),
     }),
@@ -49,48 +51,88 @@ export function adex() {
 }
 
 /**
- * @returns {import("vite").Plugin}
+ * @returns {import("vite").Plugin[]}
  */
-function configInject() {
-  return {
-    name: 'adex-injector',
-    enforce: 'pre',
-    config(_, env) {
-      // required for vavite to build
-      if (env.mode !== 'multibuild') {
-        return
-      }
+function adexMultibuild(options) {
+  let command
+  return [
+    {
+      name: 'adex-multibuild',
+      enforce: 'post',
+      config() {
+        return {
+          appType: 'custom',
+          build: {
+            ssr: false,
+            manifest: 'vite.manifest.json',
+            outDir: 'dist/client',
+            rollupOptions: {
+              input: {
+                index: 'virtual:adex:client-entry',
+              },
+            },
+          },
+        }
+      },
+      configResolved(config) {
+        command = config.command
+      },
+      configureServer(server) {
+        return async () => {
+          server.middlewares.use(async (req, res, next) => {
+            try {
+              const mod = await server.ssrLoadModule(
+                'virtual:adex:server-entry'
+              )
+              await mod.default(req, res)
+              if (!res.writableEnded) {
+                res.write('Not Found')
+                res.statusCode = 404
+                res.end()
+                next()
+              }
+            } catch (err) {
+              if (err instanceof Error) {
+                server.ssrFixStacktrace(err)
+              }
+            }
+          })
+        }
+      },
+      async closeBundle() {
+        if (command !== 'build') return
 
-      return {
-        appType: 'custom',
-        buildSteps: [
-          {
-            name: 'client',
-            config: {
-              build: {
-                outDir: 'dist/client',
-                manifest: true,
-                rollupOptions: { input: 'virtual:adex:client-entry' },
-              },
+        const config = await loadConfigFromFile()
+        config.config.plugins = config.config.plugins
+          .flat(2)
+          .filter(x => x.name != 'adex-multibuild')
+
+        await build(
+          mergeConfig(config.config, {
+            appType: 'custom',
+            configFile: false,
+            define: {
+              __ADEX_CLIENT_BUILD_OUTPUT_DIR: JSON.stringify('dist/client'),
             },
-          },
-          {
-            name: 'server',
-            config: {
-              build: {
-                target: 'node18',
-                ssr: true,
-                outDir: 'dist/server',
-                rollupOptions: {
-                  external: ['adex/utils'],
+            build: {
+              target: 'node18',
+              outDir: 'dist/server',
+              ssr: true,
+              rollupOptions: {
+                input: {
+                  index: 'virtual:adex:runner-entry',
+                  handler: 'virtual:adex:server-entry',
                 },
+                external: ['adex/utils'],
               },
             },
-          },
-        ],
-      }
+          })
+        )
+
+        await new Promise(r => process.stdout.write('', r))
+      },
     },
-  }
+  ]
 }
 
 //https://github.com/rakkasjs/rakkasjs/blob/1c552cc19e4f9165cf5d001fe3af5bc86fe7f527/packages/rakkasjs/src/vite-plugin/virtual-default-entry.ts#L11
@@ -101,15 +143,12 @@ function virtualDefaultEntry({
   resolveName = true,
 } = {}) {
   let fallback
-  let userPath
   let exists = false
+
   return {
     name: 'adex:default-entry',
-
     enforce: 'pre',
-
     async configResolved(config) {
-      userPath = path.resolve(config.root, entry.slice(1)).replace(/\\/g, '/')
       if (resolveName) {
         fallback = path.resolve(config.root, entry.slice(1)).replace(/\\/g, '/')
       } else {
@@ -123,11 +162,8 @@ function virtualDefaultEntry({
         id === '/virtual:adex:' + virtualName ||
         id === entry
       ) {
-        exists = existsSync(userPath)
-        if (exists) {
-          return await this.resolve(entry)
-        }
-        return fallback
+        const userEntry = await this.resolve(entry)
+        return userEntry || fallback
       }
     },
 
@@ -143,40 +179,27 @@ function virtualDefaultEntry({
 function resolveClientManifest() {
   let resolvedConfig
   let dev = false
-
   let moduleId = 'virtual:adex:client-manifest'
   return {
     name: 'adex:resolve-client-manifest',
-
     enforce: 'pre',
-
+    config(cfg, env) {
+      dev = env.command === 'serve'
+    },
     resolveId(id, _, options) {
       if (id === moduleId) {
         if (dev || !options.ssr) {
           return id
-        } else {
-          return this.resolve(
-            path.resolve(resolvedConfig.root, 'dist/manifest.json')
-          )
         }
+        return this.resolve(
+          path.resolve(resolvedConfig.root, 'dist/manifest.json')
+        )
       }
     },
 
     load(id) {
       if (id === moduleId) {
         return 'export default undefined'
-      }
-    },
-
-    config(config, env) {
-      dev = env.command === 'serve'
-
-      if (!config.build?.ssr) {
-        return {
-          build: {
-            manifest: 'vite.manifest.json',
-          },
-        }
       }
     },
 

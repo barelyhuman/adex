@@ -1,6 +1,6 @@
 {
   "name": "adex",
-  "version": "0.0.1",
+  "version": "0.0.2-beta.4",
   "type": "module",
   "bin": {
     "adex": "./src/cli.js"
@@ -8,7 +8,8 @@
   "exports": {
     "./vite": "./src/vite.js",
     "./utils": "./src/utils.js",
-    "./ssr": "./src/ssr.js"
+    "./ssr": "./src/ssr.js",
+    "./node-static": "./src/node-static.js"
   },
   "publishConfig": {
     "access": "public"
@@ -26,7 +27,6 @@
     "ora": "^8.0.1",
     "path-to-regexp": "^6.2.1",
     "sirv": "^2.0.4",
-    "vavite": "^3.0.0",
     "youch": "^3.3.3"
   },
   "devDependencies": {
