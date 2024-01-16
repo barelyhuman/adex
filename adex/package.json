@@ -1,6 +1,6 @@
 {
   "name": "adex",
-  "version": "0.0.2-beta.3",
+  "version": "0.0.2-beta.4",
   "type": "module",
   "bin": {
     "adex": "./src/cli.js"
