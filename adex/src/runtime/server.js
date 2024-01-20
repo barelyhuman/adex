@@ -33,7 +33,7 @@ const buildTemplate = ({
       <div id="root" mounter="${mounter}">${page}</div>
       <script type="module" defer src="${clientEntry}"></script>
       <script type="application/json" id="__dummy">
-        ${btoa(JSON.stringify(prefillData, null, 2))}
+        ${btoa(encodeURIComponent(JSON.stringify(prefillData, null, 2)))}
       </script>
       ${
         viteDevServer

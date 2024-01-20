@@ -10,7 +10,7 @@ async function render() {
   let loaderData = {}
   try {
     const meta = document.getElementById('__dummy').innerText
-    loaderData = JSON.parse(atob(meta))
+    loaderData = JSON.parse(decodeURIComponent(atob(meta)))
   } catch (err) {
     console.error(err)
   }
