@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/@lerna-lite/cli/schemas/lerna-schema.json",
-  "version": "0.0.2-beta.4",
+  "version": "0.0.2-beta.5",
   "npmClient": "pnpm",
   "preid": "beta",
   "changelog": true,
