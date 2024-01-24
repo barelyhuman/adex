@@ -38,7 +38,7 @@ const buildTemplate = ({
       ${
         viteDevServer
           ? `
-    <script type="module" src="/@vite/client" />
+    <script type="module" src="/@vite/client"></script>
     `
           : ''
       }
