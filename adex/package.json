@@ -8,6 +8,7 @@
   "exports": {
     "./vite": "./src/vite.js",
     "./utils": "./src/utils.js",
+    "./hooks": "./src/hooks.js",
     "./ssr": "./src/ssr.js",
     "./node-static": "./src/node-static.js"
   },

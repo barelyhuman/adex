@@ -5,7 +5,9 @@ import { build, loadConfigFromFile, mergeConfig } from 'vite'
 import { adexLoader } from './lib/adex-loader.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-
+/**
+ * @returns {import("vite").Plugin[]}
+ */
 export function adex() {
   return [
     adexMultibuild(),

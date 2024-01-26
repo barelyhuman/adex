@@ -1,4 +1,5 @@
 const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
+import { hooks } from 'adex/hooks'
 
 let mounterPath
 
@@ -20,6 +21,7 @@ async function render() {
   const mountable = Page(loaderData)
   root.innerHTML = ''
   mountable(root)
+  hooks.emit('onMount', {})
 }
 
 function normalizePath(path) {
