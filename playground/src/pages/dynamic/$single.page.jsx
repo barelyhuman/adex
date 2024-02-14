@@ -1,13 +1,13 @@
 export const loader = ({ req }) => {
   return {
-    catch: req.params.catch
+    single: req.params.single
   }
 }
 
 export default function Page ({ serverProps }) {
   return (
     <>
-      From Catch
+      From single
       <pre>
         {JSON.stringify(serverProps, null, 2)}
       </pre>
