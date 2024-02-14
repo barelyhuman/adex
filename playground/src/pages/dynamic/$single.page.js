@@ -1,10 +1,12 @@
+import { html } from '@arrow-js/core'
+
 export const loader = ({ req }) => {
   return {
-    single: req.params.single,
+    single: req.params.single
   }
 }
 
-export default function Page(loaderData) {
+export default function Page (loaderData) {
   return html`
     From single
     <pre>

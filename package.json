@@ -18,6 +18,7 @@
     "@lerna-lite/changed": "^3.1.0",
     "@lerna-lite/cli": "^3.1.0",
     "@lerna-lite/version": "^3.1.0",
-    "bumpp": "^9.2.1"
+    "bumpp": "^9.2.1",
+    "standard": "^17.1.0"
   }
 }

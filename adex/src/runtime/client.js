@@ -1,11 +1,12 @@
-const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
 import { hooks } from 'adex/hooks'
+import { hydrate, h } from 'preact'
+const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
 
 let mounterPath
 
 render()
 
-async function render() {
+async function render () {
   const root = document.getElementById('root')
   mounterPath = root.getAttribute('mounter')
   let loaderData = {}
@@ -18,13 +19,11 @@ async function render() {
   const pathInPageMap = normalizePath(mounterPath)
   const modImport = await pageRoutes[pathInPageMap]()
   const Page = modImport.default
-  const mountable = Page(loaderData)
-  root.innerHTML = ''
-  mountable(root)
+  hydrate(h(Page, { serverProps: loaderData }), root)
   hooks.emit('onMount', {})
 }
 
-function normalizePath(path) {
+function normalizePath (path) {
   let result = String(path)
   if (/^[./][/]?/.test(result)) {
     result = result.replace(/^[./][/]?/, '')
@@ -33,7 +32,7 @@ function normalizePath(path) {
 }
 
 if (import.meta.hot) {
-  import.meta.hot.accept(mounterPath, newModule => {
+  import.meta.hot.accept(mounterPath, (newModule) => {
     // do nothing, ssr rendered so it'll reload itself
   })
 }

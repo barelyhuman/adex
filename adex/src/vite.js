@@ -3,13 +3,15 @@ import path, { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build, loadConfigFromFile, mergeConfig } from 'vite'
 import { adexLoader } from './lib/adex-loader.js'
+import preact from '@preact/preset-vite'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 /**
  * @returns {import("vite").Plugin[]}
  */
-export function adex() {
+export function adex () {
   return [
+    preact(),
     adexMultibuild(),
     adexLoader(),
     virtualDefaultEntry({
@@ -19,7 +21,7 @@ export function adex() {
       defaultContent: readFileSync(
         join(__dirname, './runtime/server.js'),
         'utf8'
-      ),
+      )
     }),
     virtualDefaultEntry({
       entry: '/src/client',
@@ -28,7 +30,7 @@ export function adex() {
       defaultContent: readFileSync(
         join(__dirname, './runtime/client.js'),
         'utf8'
-      ),
+      )
     }),
     virtualDefaultEntry({
       entry: '/src/middleware',
@@ -37,7 +39,7 @@ export function adex() {
       defaultContent: readFileSync(
         join(__dirname, './runtime/middleware.js'),
         'utf8'
-      ),
+      )
     }),
     virtualDefaultEntry({
       entry: '/src/runner',
@@ -46,22 +48,22 @@ export function adex() {
       defaultContent: readFileSync(
         join(__dirname, './runtime/runner.js'),
         'utf8'
-      ),
+      )
     }),
-    resolveClientManifest(),
+    resolveClientManifest()
   ]
 }
 
 /**
  * @returns {import("vite").Plugin[]}
  */
-function adexMultibuild(options) {
+function adexMultibuild (options) {
   let command
   return [
     {
       name: 'adex-multibuild',
       enforce: 'post',
-      config() {
+      config () {
         return {
           appType: 'custom',
           build: {
@@ -70,16 +72,16 @@ function adexMultibuild(options) {
             outDir: 'dist/client',
             rollupOptions: {
               input: {
-                index: 'virtual:adex:client-entry',
-              },
-            },
-          },
+                index: 'virtual:adex:client-entry'
+              }
+            }
+          }
         }
       },
-      configResolved(config) {
+      configResolved (config) {
         command = config.command
       },
-      configureServer(server) {
+      configureServer (server) {
         return async () => {
           server.middlewares.use(async (req, res, next) => {
             try {
@@ -101,20 +103,20 @@ function adexMultibuild(options) {
           })
         }
       },
-      async closeBundle() {
+      async closeBundle () {
         if (command !== 'build') return
 
         const config = await loadConfigFromFile()
         config.config.plugins = config.config.plugins
           .flat(2)
-          .filter(x => x.name != 'adex-multibuild')
+          .filter((x) => x.name !== 'adex-multibuild')
 
         await build(
           mergeConfig(config.config, {
             appType: 'custom',
             configFile: false,
             define: {
-              __ADEX_CLIENT_BUILD_OUTPUT_DIR: JSON.stringify('dist/client'),
+              __ADEX_CLIENT_BUILD_OUTPUT_DIR: JSON.stringify('dist/client')
             },
             build: {
               target: 'node18',
@@ -123,42 +125,45 @@ function adexMultibuild(options) {
               rollupOptions: {
                 input: {
                   index: 'virtual:adex:runner-entry',
-                  handler: 'virtual:adex:server-entry',
+                  handler: 'virtual:adex:server-entry'
                 },
-                external: ['adex/utils'],
-              },
-            },
+                external: ['adex/utils']
+              }
+            }
           })
         )
 
-        await new Promise(r => process.stdout.write('', r))
-      },
-    },
+        await new Promise((resolve) => process.stdout.write('', resolve))
+      }
+    }
   ]
 }
 
-//https://github.com/rakkasjs/rakkasjs/blob/1c552cc19e4f9165cf5d001fe3af5bc86fe7f527/packages/rakkasjs/src/vite-plugin/virtual-default-entry.ts#L11
-function virtualDefaultEntry({
+// https://github.com/rakkasjs/rakkasjs/blob/1c552cc19e4f9165cf5d001fe3af5bc86fe7f527/packages/rakkasjs/src/vite-plugin/virtual-default-entry.ts#L11
+function virtualDefaultEntry ({
   defaultContent = '',
   entry = '',
   virtualName = '',
-  resolveName = true,
+  resolveName = true
 } = {}) {
   let fallback
-  let exists = false
+  const exists = false
 
   return {
     name: 'adex:default-entry',
     enforce: 'pre',
-    async configResolved(config) {
+    async configResolved (config) {
       if (resolveName) {
-        fallback = path.resolve(config.root, entry.slice(1)).replace(/\\/g, '/')
+        fallback = path.resolve(config.root, entry.slice(1)).replace(
+          /\\/g,
+          '/'
+        )
       } else {
         fallback = 'virtual:adex:' + virtualName
       }
     },
 
-    async resolveId(id) {
+    async resolveId (id) {
       if (
         id === 'virtual:adex:' + virtualName ||
         id === '/virtual:adex:' + virtualName ||
@@ -169,26 +174,26 @@ function virtualDefaultEntry({
       }
     },
 
-    async load(id) {
+    async load (id) {
       if (id === fallback && !exists) {
         return defaultContent
       }
-    },
+    }
   }
 }
 
-//https://github.com/rakkasjs/rakkasjs/blob/1c552cc19e4f9165cf5d001fe3af5bc86fe7f527/packages/rakkasjs/src/vite-plugin/resolve-client-manifest.ts#L11
-function resolveClientManifest() {
+// https://github.com/rakkasjs/rakkasjs/blob/1c552cc19e4f9165cf5d001fe3af5bc86fe7f527/packages/rakkasjs/src/vite-plugin/resolve-client-manifest.ts#L11
+function resolveClientManifest () {
   let resolvedConfig
   let dev = false
-  let moduleId = 'virtual:adex:client-manifest'
+  const moduleId = 'virtual:adex:client-manifest'
   return {
     name: 'adex:resolve-client-manifest',
     enforce: 'pre',
-    config(cfg, env) {
+    config (cfg, env) {
       dev = env.command === 'serve'
     },
-    resolveId(id, _, options) {
+    resolveId (id, _, options) {
       if (id === moduleId) {
         if (dev || !options.ssr) {
           return id
@@ -199,17 +204,17 @@ function resolveClientManifest() {
       }
     },
 
-    load(id) {
+    load (id) {
       if (id === moduleId) {
         return 'export default undefined'
       }
     },
 
-    configResolved(config) {
+    configResolved (config) {
       resolvedConfig = config
     },
 
-    async closeBundle() {
+    async closeBundle () {
       if (resolvedConfig.command === 'serve' || resolvedConfig.build.ssr) {
         return
       }
@@ -225,6 +230,6 @@ function resolveClientManifest() {
         .catch(() => {
           // Ignore if the file doesn't exist
         })
-    },
+    }
   }
 }

@@ -7,24 +7,24 @@ import ora from 'ora'
 const CLI_MESSAGES = {
   BOOT: () => 'Starting Adex Template Engine...',
   CLONING: () => 'Downloading `default` template',
-  EXTRACTING: location => `Extracting to: ${location}`,
+  EXTRACTING: location => `Extracting to: ${location}`
 }
 
 const ERROR_TYPES = {
   UNKNOWN: 'Unknown',
-  CREATION: 'Failed to Create',
+  CREATION: 'Failed to Create'
 }
 
 class AdexCLIError extends Error {
   type
-  constructor(errType, errMessage) {
+  constructor (errType, errMessage) {
     super(errMessage)
     this.type = errType
   }
 }
 
 const templates = {
-  default: 'barelyhuman/adex-default-template',
+  default: 'barelyhuman/adex-default-template'
 }
 
 const spinner = ora(CLI_MESSAGES.BOOT()).start()
@@ -44,7 +44,7 @@ try {
   spinner.text = 'DONE!'
   spinner.succeed()
 } catch (err) {
-  if (err instanceof AdexCLIError && err.type == ERROR_TYPES.CREATION) {
+  if (err instanceof AdexCLIError && err.type === ERROR_TYPES.CREATION) {
     spinner.fail(err.message || 'Oops! Something went wrong...')
   } else {
     writeFileSync('adex.error.log', err.stack)

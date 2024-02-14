@@ -3,27 +3,27 @@ import { getEntryHTML, ms, routerUtils, Youch } from 'adex/utils'
 import { basename, resolve } from 'node:path'
 import qs from 'node:querystring'
 import middleware from 'virtual:adex:middleware-entry'
-const viteDevServer = import.meta.env.DEV
 
 // VITE VIRTUAL
 // @ts-ignore
 import clientManifest from 'virtual:adex:client-manifest'
 
 import { normalizePath } from 'vite'
+const viteDevServer = import.meta.env.DEV
 
 const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
 const apiRoutes = import.meta.glob('./pages/**/*.api.{js,ts,jsx,tsx}')
 const assetBaseURL = import.meta.env.BASE_URL ?? '/'
 
 export const sirvOptions = {
-  maxAge: ms('1m'),
+  maxAge: ms('1m')
 }
 
 const buildTemplate = ({
   page = '',
   mounter = '',
   clientEntry = '',
-  prefillData = {},
+  prefillData = {}
 } = {}) => {
   return getEntryHTML()
     .replace('<!--app-head-->', '')
@@ -46,7 +46,7 @@ const buildTemplate = ({
     )
 }
 
-async function buildHandler({ routes }) {
+async function buildHandler ({ routes }) {
   const routesForManifest = Object.entries(pageRoutes).map(
     ([path, modImport]) => {
       return {
@@ -54,7 +54,7 @@ async function buildHandler({ routes }) {
         relativePath: normalizePath(path),
         importer: modImport,
         absolutePath: resolve(process.cwd(), path),
-        isDirectory: false,
+        isDirectory: false
       }
     }
   )
@@ -66,7 +66,7 @@ async function buildHandler({ routes }) {
         relativePath: normalizePath(path),
         importer: modImport,
         absolutePath: resolve(process.cwd(), path),
-        isDirectory: false,
+        isDirectory: false
       }
     }
   )
@@ -93,7 +93,7 @@ async function buildHandler({ routes }) {
         })
       },
       transformer: routerUtils.expressTransformer,
-      sorter: routerUtils.defaultURLSorter,
+      sorter: routerUtils.defaultURLSorter
     }
   )
 
@@ -119,7 +119,7 @@ async function buildHandler({ routes }) {
         })
       },
       transformer: routerUtils.expressTransformer,
-      sorter: routerUtils.defaultURLSorter,
+      sorter: routerUtils.defaultURLSorter
     }
   )
 
@@ -141,12 +141,12 @@ async function buildHandler({ routes }) {
       err.message = `Failed to execute loader for url:\`${req.url}\` with page module: \`${handlerMeta.relativePath}\` with error ${err.message}`
       throw err
     }
-    const str = renderToString(mod.default(loadedData))
+    const str = renderToString(mod.default({ serverProps: loadedData }))
     const html = buildTemplate({
       page: str,
       mounter: handlerMeta.relativePath,
       clientEntry: clientEntryPath,
-      prefillData: loadedData,
+      prefillData: loadedData
     })
     res.setHeader('content-type', 'text/html')
     res.write(html)
@@ -182,7 +182,7 @@ async function buildHandler({ routes }) {
       let usingApi = false
       const hasMappedPage = routesWithURL.find(item => {
         const matcher = routerUtils.paramMatcher(item.url, {
-          decode: decodeURIComponent,
+          decode: decodeURIComponent
         })
 
         const matched = matcher(baseURL)
@@ -197,7 +197,7 @@ async function buildHandler({ routes }) {
       if (!hasMappedPage) {
         const hasMappedAPI = apiRoutesWithURL.find(item => {
           const matcher = routerUtils.paramMatcher(item.url, {
-            decode: decodeURIComponent,
+            decode: decodeURIComponent
           })
 
           const matched = matcher(baseURL)

@@ -1,1 +1,1 @@
-export { renderToString } from 'arrow-render-to-string'
+export { renderToString } from 'preact-render-to-string'

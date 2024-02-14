@@ -2,16 +2,16 @@ import { html, reactive } from '@arrow-js/core'
 
 export const loader = ({ req }) => {
   console.log({
-    q: req.query,
+    q: req.query
   })
   return {
-    greeting: req.params.name,
+    greeting: req.params.name
   }
 }
 
-export default function Page(loaderData) {
+export default function Page (loaderData) {
   const state = reactive({
-    color: false,
+    color: false
   })
 
   return html`

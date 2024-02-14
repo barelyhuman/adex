@@ -10,16 +10,16 @@ const generate = modDefault(_generate)
 /**
  * @returns {import("vite").Plugin}
  */
-export function adexLoader() {
+export function adexLoader () {
   return {
     name: 'adex-loader-plugin',
-    async transform(source, id, options) {
+    async transform (source, id, options) {
       if (options?.ssr) return
       if (!/[.](page)[.]((js|ts)x?)$/.test(id)) return
 
       const transformResult = await transformWithEsbuild(source, id, {
         platform: 'browser',
-        treeShaking: true,
+        treeShaking: true
       })
 
       const ast = moduleParser(transformResult.code)
@@ -27,19 +27,19 @@ export function adexLoader() {
       const astWithoutImports = removeUnusedImports(astWithoutLoader)
 
       return generate(astWithoutImports)
-    },
+    }
   }
 }
 
-function moduleParser(source) {
+function moduleParser (source) {
   return parse(source, {
-    sourceType: 'module',
+    sourceType: 'module'
   })
 }
 
-function removeLoaderFromAST(ast) {
+function removeLoaderFromAST (ast) {
   traverse(ast, {
-    Identifier(path) {
+    Identifier (path) {
       if (path.node.name !== 'loader') return
 
       if (path.parent) {
@@ -53,28 +53,28 @@ function removeLoaderFromAST(ast) {
           }
         }
       }
-    },
+    }
   })
   return moduleParser(generate(ast).code)
 }
 
-function removeUnusedImports(ast) {
+function removeUnusedImports (ast) {
   const paths = new Map()
 
   const visitor = {
-    ImportSpecifier(path) {
+    ImportSpecifier (path) {
       paths.set(path.node.local.name, path)
     },
-    ImportDefaultSpecifier(path) {
+    ImportDefaultSpecifier (path) {
       paths.set(path.node.local.name, path)
     },
     Program: {
-      exit(path) {
-        for (let [key, path] of paths.entries()) {
+      exit (path) {
+        for (const [key, path] of paths.entries()) {
           const binding = path.scope.bindings[key]
           if (!binding) continue
           if (binding.references !== 0) continue
-          if (path.node.type == 'ImportDefaultSpecifier') {
+          if (path.node.type === 'ImportDefaultSpecifier') {
             path.parentPath.remove()
           } else {
             if (path.parent.specifiers.length === 1) {
@@ -84,8 +84,8 @@ function removeUnusedImports(ast) {
             }
           }
         }
-      },
-    },
+      }
+    }
   }
 
   traverse(ast, visitor)
