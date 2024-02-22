@@ -1,5 +1,5 @@
 import { onMount } from 'adex/hooks'
-import { signal } from '@preact/signals'
+import { CounterIsland } from '../components/counter.jsx'
 
 export const loader = async () => {
   return {
@@ -7,18 +7,12 @@ export const loader = async () => {
   }
 }
 
-const count = signal(0)
-
 onMount(() => {
   console.log('mounted')
 })
 
 export default function ({ serverProps }) {
   return (
-    <>
-      <button onClick={() => (count.value += 1)}>
-        {count}
-      </button>
-    </>
+    <CounterIsland />
   )
 }

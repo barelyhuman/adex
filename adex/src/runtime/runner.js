@@ -6,7 +6,12 @@ import { sirv } from 'adex/node-static'
 // eslint-disable-next-line no-undef
 const assets = sirv(__ADEX_CLIENT_BUILD_OUTPUT_DIR, {
   maxAge: 24 * 60 * 60 * 1000, // 1d
-  immutable: true
+  immutable: true,
+  setHeaders (res, pathname, stats) {
+    if (pathname.endsWith('.jsx')) {
+      res.setHeader('Content-Type', 'text/javascript')
+    }
+  }
 })
 
 const server = http.createServer((req, res) => {

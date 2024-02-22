@@ -6,7 +6,7 @@ import middleware from 'virtual:adex:middleware-entry'
 
 // VITE VIRTUAL
 // @ts-ignore
-import clientManifest from 'virtual:adex:client-manifest'
+// import clientManifest from 'virtual:adex:client-manifest'
 
 import { normalizePath } from 'vite'
 const viteDevServer = import.meta.env.DEV
@@ -126,12 +126,13 @@ async function buildHandler ({ routes }) {
   let clientEntryPath
   if (viteDevServer) {
     clientEntryPath = assetBaseURL + 'virtual:adex:client-entry'
-  } else if (clientManifest) {
-    const hasEntryFile = Object.values(clientManifest).find(v => v.isEntry)
-    if (hasEntryFile) {
-      clientEntryPath = hasEntryFile.file
-    }
   }
+  // else if (clientManifest) {
+  //   const hasEntryFile = Object.values(clientManifest).find(v => v.isEntry)
+  //   if (hasEntryFile) {
+  //     clientEntryPath = hasEntryFile.file
+  //   }
+  // }
 
   const pageLoader = async (mod, handlerMeta, req, res) => {
     let loadedData = {}

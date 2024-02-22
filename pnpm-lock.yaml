@@ -45,8 +45,8 @@ importers:
         specifier: ^0.0.6
         version: 0.0.6
       '@dumbjs/preland':
-        specifier: 0.0.0-beta.0
-        version: 0.0.0-beta.0(astring@1.8.6)
+        specifier: 0.0.0-beta.8
+        version: 0.0.0-beta.8(astring@1.8.6)
       '@preact/preset-vite':
         specifier: ^2.8.1
         version: 2.8.1(@babel/core@7.23.9)(preact@10.19.4)(vite@5.0.12)
@@ -431,8 +431,8 @@ packages:
       path-to-regexp: 6.2.1
     dev: false
 
-  /@dumbjs/preland@0.0.0-beta.0(astring@1.8.6):
-    resolution: {integrity: sha512-R9Sqj3ziQR71d7wr9YogC3DWk6zMOsyMHHI0bbiWDsk3Ok/8wiZsu34tkzEEqV+LBl4usfzTb0kwrxbC0pBDiA==}
+  /@dumbjs/preland@0.0.0-beta.8(astring@1.8.6):
+    resolution: {integrity: sha512-Yx4HL4f45TDZmFQCq9ljqmGWicTC1O8fMzRUEV6H5DsP+bkzxPfZiF87QCBaqsMgwW1Xq8rBMv4m+Ro+faX2DA==}
     dependencies:
       '@barelyhuman/astring-jsx': 2.0.1(astring@1.8.6)
       acorn: 8.11.2
