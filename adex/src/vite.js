@@ -1,9 +1,3 @@
-import fs, { readFileSync } from 'node:fs'
-import path, { basename, dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { build, loadConfigFromFile, mergeConfig } from 'vite'
-import { adexLoader } from './lib/adex-loader.js'
-import preact from '@preact/preset-vite'
 import {
   DEFAULT_TRANSPILED_IDENTIFIERS,
   findIslands,
@@ -13,6 +7,12 @@ import {
   readSourceFile
 } from '@dumbjs/preland'
 import { addImportToAST, codeFromAST } from '@dumbjs/preland/ast'
+import preact from '@preact/preset-vite'
+import fs, { readFileSync } from 'node:fs'
+import path, { basename, dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { build, loadConfigFromFile } from 'vite'
+import { adexLoader } from './lib/adex-loader.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 /**

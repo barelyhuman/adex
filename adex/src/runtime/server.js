@@ -24,7 +24,7 @@ const buildTemplate = ({
     .replace(
       '<!--app-body-->',
       `
-      <div id="root" mounter="${mounter}">${page}</div>
+      <div id="root" ${mounter ? `mounter="${mounter}"` : ''}>${page}</div>
       <script type="application/json" id="__dummy">
         ${btoa(encodeURIComponent(JSON.stringify(prefillData, null, 2)))}
       </script>
@@ -128,7 +128,6 @@ async function buildHandler ({ routes }) {
     const str = renderToString(mod.default({ serverProps: loadedData }))
     const html = buildTemplate({
       page: str,
-      mounter: handlerMeta.relativePath,
       prefillData: loadedData
     })
     res.setHeader('content-type', 'text/html')
