@@ -4,16 +4,11 @@ import { basename, resolve } from 'node:path'
 import qs from 'node:querystring'
 import middleware from 'virtual:adex:middleware-entry'
 
-// VITE VIRTUAL
-// @ts-ignore
-// import clientManifest from 'virtual:adex:client-manifest'
-
 import { normalizePath } from 'vite'
 const viteDevServer = import.meta.env.DEV
 
 const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
 const apiRoutes = import.meta.glob('./pages/**/*.api.{js,ts,jsx,tsx}')
-const assetBaseURL = import.meta.env.BASE_URL ?? '/'
 
 export const sirvOptions = {
   maxAge: ms('1m')
@@ -22,7 +17,6 @@ export const sirvOptions = {
 const buildTemplate = ({
   page = '',
   mounter = '',
-  clientEntry = '',
   prefillData = {}
 } = {}) => {
   return getEntryHTML()
@@ -31,7 +25,6 @@ const buildTemplate = ({
       '<!--app-body-->',
       `
       <div id="root" mounter="${mounter}">${page}</div>
-      <!--<script type="module" defer src="${clientEntry}"></script>-->
       <script type="application/json" id="__dummy">
         ${btoa(encodeURIComponent(JSON.stringify(prefillData, null, 2)))}
       </script>
@@ -123,17 +116,6 @@ async function buildHandler ({ routes }) {
     }
   )
 
-  // let clientEntryPath
-  // if (viteDevServer) {
-  //   clientEntryPath = assetBaseURL + 'virtual:adex:client-entry'
-  // }
-  // else if (clientManifest) {
-  //   const hasEntryFile = Object.values(clientManifest).find(v => v.isEntry)
-  //   if (hasEntryFile) {
-  //     clientEntryPath = hasEntryFile.file
-  //   }
-  // }
-
   const pageLoader = async (mod, handlerMeta, req, res) => {
     let loadedData = {}
     try {
@@ -147,7 +129,6 @@ async function buildHandler ({ routes }) {
     const html = buildTemplate({
       page: str,
       mounter: handlerMeta.relativePath,
-      // clientEntry: clientEntryPath,
       prefillData: loadedData
     })
     res.setHeader('content-type', 'text/html')
