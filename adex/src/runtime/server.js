@@ -31,7 +31,7 @@ const buildTemplate = ({
       '<!--app-body-->',
       `
       <div id="root" mounter="${mounter}">${page}</div>
-      <script type="module" defer src="${clientEntry}"></script>
+      <!--<script type="module" defer src="${clientEntry}"></script>-->
       <script type="application/json" id="__dummy">
         ${btoa(encodeURIComponent(JSON.stringify(prefillData, null, 2)))}
       </script>
@@ -81,7 +81,7 @@ async function buildHandler ({ routes }) {
           paths,
           routerUtils.defaultURLSorter
         )
-        return normalized.map(x => {
+        return normalized.map((x) => {
           x.url = x.url
             .replace(/\.page$/, '')
             .replace(/\/index$/, '/')
@@ -107,7 +107,7 @@ async function buildHandler ({ routes }) {
           paths,
           routerUtils.defaultURLSorter
         )
-        return normalized.map(x => {
+        return normalized.map((x) => {
           x.url = x.url
             .replace(/\.api$/, '')
             .replace(/\/index$/, '/')
@@ -123,10 +123,10 @@ async function buildHandler ({ routes }) {
     }
   )
 
-  let clientEntryPath
-  if (viteDevServer) {
-    clientEntryPath = assetBaseURL + 'virtual:adex:client-entry'
-  }
+  // let clientEntryPath
+  // if (viteDevServer) {
+  //   clientEntryPath = assetBaseURL + 'virtual:adex:client-entry'
+  // }
   // else if (clientManifest) {
   //   const hasEntryFile = Object.values(clientManifest).find(v => v.isEntry)
   //   if (hasEntryFile) {
@@ -139,14 +139,15 @@ async function buildHandler ({ routes }) {
     try {
       loadedData = 'loader' in mod ? await mod.loader({ req }) : {}
     } catch (err) {
-      err.message = `Failed to execute loader for url:\`${req.url}\` with page module: \`${handlerMeta.relativePath}\` with error ${err.message}`
+      err.message =
+        `Failed to execute loader for url:\`${req.url}\` with page module: \`${handlerMeta.relativePath}\` with error ${err.message}`
       throw err
     }
     const str = renderToString(mod.default({ serverProps: loadedData }))
     const html = buildTemplate({
       page: str,
       mounter: handlerMeta.relativePath,
-      clientEntry: clientEntryPath,
+      // clientEntry: clientEntryPath,
       prefillData: loadedData
     })
     res.setHeader('content-type', 'text/html')
@@ -169,7 +170,7 @@ async function buildHandler ({ routes }) {
       req.query = Object.assign({}, qs.parse(query))
 
       let _resolve
-      const promise = new Promise(resolve => {
+      const promise = new Promise((resolve) => {
         _resolve = resolve
       })
 
@@ -181,7 +182,7 @@ async function buildHandler ({ routes }) {
 
       let mappedHandler
       let usingApi = false
-      const hasMappedPage = routesWithURL.find(item => {
+      const hasMappedPage = routesWithURL.find((item) => {
         const matcher = routerUtils.paramMatcher(item.url, {
           decode: decodeURIComponent
         })
@@ -196,7 +197,7 @@ async function buildHandler ({ routes }) {
       mappedHandler = hasMappedPage
 
       if (!hasMappedPage) {
-        const hasMappedAPI = apiRoutesWithURL.find(item => {
+        const hasMappedAPI = apiRoutesWithURL.find((item) => {
           const matcher = routerUtils.paramMatcher(item.url, {
             decode: decodeURIComponent
           })

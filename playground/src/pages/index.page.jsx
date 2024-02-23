@@ -13,6 +13,6 @@ onMount(() => {
 
 export default function ({ serverProps }) {
   return (
-    <CounterIsland />
+    <CounterIsland count={serverProps.count} />
   )
 }

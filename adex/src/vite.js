@@ -268,7 +268,6 @@ function adexIslandExtractor () {
     name: 'adex-island-extractor',
     configResolved (config) {
       mode = config.mode
-      console.log({ mode })
     },
     load (id, env) {
       if (
@@ -332,13 +331,16 @@ function adexIslandExtractor () {
           id
         )
         if (mode === 'development') {
-          generatedTemplate = generatedTemplate.replace('render(restoreTree(this.component, this.baseProps), this, undefined)', 'render(restoreTree(this.component, this.baseProps), this, this)')
+          generatedTemplate = generatedTemplate
+            .replace(
+              'render(restoreTree(this.component, this.baseProps), this, undefined)',
+              'render(restoreTree(this.component, this.baseProps), this, this)'
+            )
         }
         islandsToGenerate.push({
           id: generateKey(island.id),
           name: island.id,
           template: generatedTemplate
-
         })
       })
 

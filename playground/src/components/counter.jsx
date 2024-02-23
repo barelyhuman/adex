@@ -1,11 +1,10 @@
-import { signal } from '@preact/signals'
+import { useState } from 'preact/hooks'
 
-const count = signal(0)
-
-export const CounterIsland = () => {
+export const CounterIsland = ({ count: propCount }) => {
+  const [count, setCount] = useState(propCount)
   return (
     <>
-      <button onClick={() => (count.value += 1)}>
+      <button onClick={() => setCount(count + 1)}>
         {count}
       </button>
     </>
