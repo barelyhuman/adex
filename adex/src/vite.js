@@ -1,29 +1,26 @@
+import preact from '@preact/preset-vite'
+import fs, { readFileSync } from 'node:fs'
+import path, { dirname, extname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { build, normalizePath, transformWithEsbuild } from 'vite'
+import { addImportToAST, codeFromAST } from '@dumbjs/preland/ast'
 import {
   DEFAULT_TRANSPILED_IDENTIFIERS,
   findIslands,
   generateClientTemplate,
   injectIslandAST,
-  isFunctionIsland,
-  readSourceFile
+  isFunctionIsland
 } from '@dumbjs/preland'
-import { addImportToAST, codeFromAST } from '@dumbjs/preland/ast'
-import preact from '@preact/preset-vite'
-import fs, { readFileSync } from 'node:fs'
-import path, { basename, dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { build, loadConfigFromFile } from 'vite'
-import { adexLoader } from './lib/adex-loader.js'
+import { mkdir } from 'node:fs/promises'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const JS_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx']
+
 /**
  * @returns {import("vite").Plugin[]}
  */
 export function adex () {
   return [
-    preact(),
-    adexMultibuild(),
-    adexLoader(),
-    adexIslandExtractor(),
     virtualDefaultEntry({
       entry: '/src/server',
       virtualName: 'server-entry',
@@ -34,7 +31,7 @@ export function adex () {
       )
     }),
     virtualDefaultEntry({
-      entry: '/src/client',
+      entry: '/src/app',
       virtualName: 'client-entry',
       resolveName: true,
       defaultContent: readFileSync(
@@ -60,106 +57,9 @@ export function adex () {
         'utf8'
       )
     }),
+    preact(),
+    _adex(),
     resolveClientManifest()
-  ]
-}
-
-/**
- * @returns {import("vite").Plugin[]}
- */
-function adexMultibuild (options) {
-  let command
-  return [
-    {
-      name: 'adex-multibuild',
-      enforce: 'post',
-      config () {
-        return {
-          appType: 'custom',
-          define: {
-            __ADEX_CLIENT_BUILD_OUTPUT_DIR: JSON.stringify('dist/client')
-          },
-          build: {
-            target: 'node18',
-            ssr: true,
-            // manifest: 'vite.manifest.json',
-            outDir: 'dist/server',
-            rollupOptions: {
-              input: {
-                index: 'virtual:adex:runner-entry',
-                handler: 'virtual:adex:server-entry'
-              },
-              external: ['adex/utils']
-            }
-          }
-        }
-      },
-      configResolved (config) {
-        command = config.command
-      },
-      configureServer (server) {
-        return async () => {
-          server.middlewares.use(async (req, res, next) => {
-            try {
-              const mod = await server.ssrLoadModule(
-                'virtual:adex:server-entry'
-              )
-              await mod.default(req, res)
-              if (!res.writableEnded) {
-                res.write('Not Found')
-                res.statusCode = 404
-                res.end()
-                next()
-              }
-            } catch (err) {
-              if (err instanceof Error) {
-                server.ssrFixStacktrace(err)
-              }
-            }
-          })
-        }
-      },
-      async closeBundle () {
-        if (command !== 'build') return
-
-        islandsToGenerate.forEach(f => {
-          const outputFile = path.join('dist', f.id)
-          fs.mkdirSync(dirname(outputFile), {
-            recursive: true
-          })
-          fs.writeFileSync(outputFile, f.template, 'utf-8')
-        })
-
-        const config = await loadConfigFromFile()
-        config.config.plugins = config.config.plugins
-          .flat(2)
-          .filter((x) => x.name !== 'adex-multibuild')
-
-        const input = Object.fromEntries(islandsToGenerate.map(d => [basename(d.id), path.join('dist', d.id)]))
-
-        await build({
-          appType: 'custom',
-          configFile: false,
-          plugins: [preact()],
-          build: {
-            target: 'node18',
-            outDir: 'dist/client/assets',
-            ssr: false,
-            rollupOptions: {
-              input,
-              output: {
-                format: 'esm',
-                entryFileNames: '[name]',
-                chunkFileNames: '[name].js'
-              },
-              external: ['adex/utils']
-            }
-          }
-        })
-
-        await new Promise((resolve) => process.stdout.write('', resolve))
-      }
-    }
   ]
 }
 
@@ -258,104 +158,263 @@ function resolveClientManifest () {
   }
 }
 
-const islandsToGenerate = []
+/**
+ * @returns {import("vite").Plugin[]}
+ */
+function _adex (options) {
+  const islands = new Map()
+  let devServer
+  return [
+    adexServer(devServer),
+    adexAnalyse(islands),
+    adexBundle(islands)
+    // adexIslandResolver(islands)
+  ]
+}
+
 /**
  * @returns {import("vite").Plugin}
  */
-function adexIslandExtractor () {
-  let mode
+function adexServer (devServer) {
   return {
-    name: 'adex-island-extractor',
-    configResolved (config) {
-      mode = config.mode
-    },
-    load (id, env) {
-      if (
-        id.startsWith('virtual:adex:') ||
-        id.startsWith('/virtual:adex')
-      ) {
-        return null
-      }
-
-      const existsInIslands = islandsToGenerate.findIndex((x) =>
-        x.id === id || id === '/' + x.id
-      )
-      if (existsInIslands > -1) {
-        return {
-          code: islandsToGenerate[existsInIslands].template
-        }
+    name: 'adex-server',
+    enforce: 'post',
+    apply: 'serve',
+    config () {
+      return {
+        appType: 'custom'
       }
     },
-    transform (code, id, ctx) {
-      const existsInIslands = islandsToGenerate.findIndex((x) =>
-        x.id === id || id === '/' + x.id
-      )
-      if (existsInIslands > -1) {
-        return {
-          code
-        }
-      }
-
-      if (id.startsWith('\x00')) {
-        return
-      }
-
-      if (!(/\.(js|ts)x?$/).test(id)) {
-        return
-      }
-
-      const source = readSourceFile(id)
-      const islands = findIslands(source, {
-        isFunctionIsland: (ast) =>
-          isFunctionIsland(ast, {
-            transpiledIdentifiers: [].concat(
-              DEFAULT_TRANSPILED_IDENTIFIERS,
-              '_jsxDEV'
+    configureServer (_server) {
+      devServer = _server
+      return () => {
+        _server.middlewares.use(async (req, res, next) => {
+          try {
+            const mod = await devServer.ssrLoadModule(
+              'virtual:adex:server-entry',
+              {
+                fixStacktrace: true
+              }
             )
-          })
-      })
+              .then((mod) => 'default' in mod ? mod.default : mod)
+            await mod(req, res, next)
 
-      if (!islands.length) {
-        return
+            if (!res.writableEnded) {
+              res.statusCode = 404
+              return res.end()
+            }
+          } catch (error) {
+            // Forward the error to Vite
+            next(error)
+          }
+        })
+      }
+    }
+  }
+}
+
+/**
+ * @param {Map<string,any>} islands
+ * @returns {import("vite").Plugin}
+ */
+function adexAnalyse (islands) {
+  let currentConfig
+  const rawVirtualId = getIslandVirtualName('')
+  return {
+    name: 'adex-analyse',
+    enforce: 'pre',
+    configResolved (config) {
+      currentConfig = config
+    },
+    resolveId (id) {
+      if (
+        !(id.startsWith(rawVirtualId) &&
+          id.startsWith('/' + rawVirtualId))
+      ) return
+      return id
+    },
+    load (id) {
+      if (id.indexOf(rawVirtualId) === 0) {
+        return id
       }
 
-      const generateKey = (id) => `assets/${id}.island.jsx`
+      const normalizedId = id.replace(/^\//, '').replace(rawVirtualId, '')
+      const hasIsland = islands.get(normalizedId)
 
-      islands.forEach((island) => {
+      if (!hasIsland) return
+
+      return transformWithEsbuild(
+        hasIsland.template,
+        id,
+        {
+          jsx: 'automatic',
+          jsxImportSource: 'preact'
+        }
+      )
+    },
+    transform (source, id, ctx) {
+      if (!ctx.ssr) return
+
+      const extension = extname(normalizePath(id))
+      if (!JS_EXTENSIONS.includes(extension)) return
+
+      let islandsInCode = []
+      try {
+        islandsInCode = findIslands(source, {
+          isFunctionIsland: (ast) =>
+            isFunctionIsland(ast, {
+              transpiledIdentifiers: DEFAULT_TRANSPILED_IDENTIFIERS.concat(
+                '_jsxDEV'
+              )
+            })
+        })
+      } catch (err) {}
+
+      if (!islandsInCode.length) return
+
+      islandsInCode.forEach((island) => {
         injectIslandAST(island.ast, island)
         const addImport = addImportToAST(island.ast)
         addImport('h', 'preact', { named: true })
         addImport('Fragment', 'preact', { named: true })
-        let generatedTemplate = generateClientTemplate(island.id).replace(
+
+        let clientTemplate = generateClientTemplate(island.id)
+        clientTemplate = clientTemplate.replace(
           '<~~{importPath}~~>',
-          id
+          `${id}`
         )
-        if (mode === 'development') {
-          generatedTemplate = generatedTemplate
-            .replace(
-              'render(restoreTree(this.component, this.baseProps), this, undefined)',
-              'render(restoreTree(this.component, this.baseProps), this, this)'
-            )
-        }
-        islandsToGenerate.push({
-          id: generateKey(island.id),
-          name: island.id,
-          template: generatedTemplate
+        islands.set(island.id, {
+          ...island,
+          virtualName: getIslandVirtualName(island.id),
+          template: clientTemplate
         })
       })
 
-      let serverTemplate = codeFromAST(islands[0].ast)
+      let code = codeFromAST(islandsInCode[0].ast)
 
-      islands.forEach((island) => {
-        serverTemplate = serverTemplate.replace(
-          `<~{${island.id}}~>`,
-          generateKey(island.id)
-        )
+      islandsInCode.forEach((island) => {
+        if (currentConfig.mode === 'development') {
+          code = code.replace(
+            `<~{${island.id}}~>`,
+            `/${getIslandVirtualName(island.id)}`
+          )
+        } else {
+          code = code.replace(
+            `<~{${island.id}}~>`,
+            `/${island.id}.js`
+          )
+        }
       })
 
       return {
-        code: serverTemplate
+        code
       }
     }
   }
+}
+
+/**
+ * @param {Map<string,unknown>} islands
+ * @returns {import("vite").Plugin}
+ */
+function adexBundle (islands) {
+  return {
+    name: 'adex-bundle',
+    apply: 'build',
+    enforce: 'post',
+    config () {
+      return {
+        appType: 'custom',
+        define: {
+          __ADEX_CLIENT_BUILD_OUTPUT_DIR: JSON.stringify('dist/client')
+        },
+        build: {
+          copyPublicDir: true,
+          outDir: 'dist/server',
+          ssr: true,
+          target: 'node18',
+          ssrEmitAssets: true,
+          rollupOptions: {
+            input: {
+              index: 'virtual:adex:runner-entry'
+            },
+            external: ['adex/utils', 'preact']
+          }
+        }
+      }
+    },
+    async closeBundle () {
+      await mkdir('dist/client', { recursive: true })
+
+      if (!islands.size) {
+        return
+      }
+
+      const asInputs = Object.fromEntries(
+        Array.from(islands.entries()).map(([k, v]) => {
+          return [k, `virtual:adex:__island:${v.id}`]
+        })
+      )
+
+      await build({
+        plugins: [
+          adexIslandVirtuals(islands),
+          preact()
+        ],
+        configFile: false,
+        build: {
+          outDir: 'dist/client',
+          ssr: false,
+          target: 'esnext',
+          rollupOptions: {
+            input: asInputs,
+            output: {
+              entryFileNames: '[name].js',
+              format: 'esm'
+            }
+          }
+        }
+      })
+    }
+  }
+}
+
+/**
+ * @param {Map<string,unknown>} islands
+ */
+function adexIslandVirtuals (islands) {
+  const virtualIslands = Object.fromEntries(
+    Array.from(islands.entries()).map(
+      ([k, v]) => [getIslandVirtualName(v.id), v.template]
+    )
+  )
+  const rawVirtualId = getIslandVirtualName('')
+  return {
+    name: 'adex-island-virtuals',
+    enforce: 'pre',
+    resolveId (id) {
+      if (!id.includes(rawVirtualId)) return
+      return id
+    },
+    load (id) {
+      if (!(id in virtualIslands)) {
+        return
+      }
+
+      return transformWithEsbuild(
+        virtualIslands[id],
+        id,
+        {
+          jsx: 'automatic',
+          jsxImportSource: 'preact',
+          jsxFactory: 'h',
+          jsxFragment: 'Fragment'
+        }
+      )
+    }
+  }
+}
+
+function getIslandVirtualName (name) {
+  return `virtual:adex:__island:${name}`
 }

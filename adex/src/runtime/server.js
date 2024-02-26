@@ -117,18 +117,9 @@ async function buildHandler ({ routes }) {
   )
 
   const pageLoader = async (mod, handlerMeta, req, res) => {
-    let loadedData = {}
-    try {
-      loadedData = 'loader' in mod ? await mod.loader({ req }) : {}
-    } catch (err) {
-      err.message =
-        `Failed to execute loader for url:\`${req.url}\` with page module: \`${handlerMeta.relativePath}\` with error ${err.message}`
-      throw err
-    }
-    const str = renderToString(mod.default({ serverProps: loadedData }))
+    const str = renderToString(mod.default())
     const html = buildTemplate({
-      page: str,
-      prefillData: loadedData
+      page: str
     })
     res.setHeader('content-type', 'text/html')
     res.write(html)
