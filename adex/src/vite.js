@@ -1,6 +1,6 @@
 import preact from '@preact/preset-vite'
 import fs, { readFileSync } from 'node:fs'
-import path, { dirname, extname, join } from 'node:path'
+import path, { basename, dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build, normalizePath, transformWithEsbuild } from 'vite'
 import { addImportToAST, codeFromAST } from '@dumbjs/preland/ast'
@@ -21,6 +21,7 @@ const JS_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx']
  */
 export function adex () {
   return [
+    resolveStyleEntry(),
     virtualDefaultEntry({
       entry: '/src/server',
       virtualName: 'server-entry',
@@ -168,7 +169,6 @@ function _adex (options) {
     adexServer(devServer),
     adexAnalyse(islands),
     adexBundle(islands)
-    // adexIslandResolver(islands)
   ]
 }
 
@@ -332,10 +332,13 @@ function adexBundle (islands) {
           copyPublicDir: true,
           outDir: 'dist/server',
           ssr: true,
-          target: 'node18',
+          manifest: 'manifest.json',
+          ssrManifest: 'ssr.manifest.json',
           ssrEmitAssets: true,
+          target: 'node18',
           rollupOptions: {
             input: {
+              styles: 'virtual:adex:style-entry',
               index: 'virtual:adex:runner-entry'
             },
             external: ['adex/utils', 'preact']
@@ -344,9 +347,13 @@ function adexBundle (islands) {
       }
     },
     async closeBundle () {
-      await mkdir('dist/client', { recursive: true })
+      await mkdir('dist/client/assets', { recursive: true })
 
       if (!islands.size) {
+        fs.existsSync('dist/.client-assets') &&
+          await fs.promises.cp('dist/.client-assets', 'dist/client/assets', {
+            recursive: true
+          })
         return
       }
 
@@ -359,13 +366,27 @@ function adexBundle (islands) {
       await build({
         plugins: [
           adexIslandVirtuals(islands),
-          preact()
+          preact(),
+          {
+            name: 'adex-style-copier',
+            async closeBundle () {
+              fs.existsSync('dist/.client-assets') &&
+                await fs.promises.cp(
+                  'dist/.client-assets',
+                  'dist/client/assets',
+                  {
+                    recursive: true
+                  }
+                )
+            }
+          }
         ],
         configFile: false,
         build: {
           outDir: 'dist/client',
           ssr: false,
           target: 'esnext',
+          manifest: true,
           rollupOptions: {
             input: asInputs,
             output: {
@@ -417,4 +438,88 @@ function adexIslandVirtuals (islands) {
 
 function getIslandVirtualName (name) {
   return `virtual:adex:__island:${name}`
+}
+
+/**
+ * @return {import("vite").Plugin}
+ */
+function resolveStyleEntry () {
+  const moduleId = 'virtual:adex:style-entry'
+  let resolvedConfig
+  return {
+    name: 'adex:style-entry',
+    enforce: 'pre',
+    configResolved (config) {
+      resolvedConfig = config
+    },
+    async resolveId (id) {
+      if (
+        id === moduleId ||
+        id === '/' + moduleId
+      ) {
+        const userEntry = await this.resolve('src/main.css')
+        return userEntry || moduleId
+      }
+    },
+    transform (code, id) {
+      if (!id.endsWith('.css')) return
+      if (id !== moduleId) return
+      return {
+        code: `
+            export default \`${code}\`
+          `
+      }
+    },
+    async load (id) {
+      if (id === moduleId) {
+        return ''
+      }
+    },
+    async closeBundle (bundle) {
+      if (resolvedConfig.command === 'serve' || !resolvedConfig.build.ssr) {
+        return
+      }
+
+      const manifestPath = path.resolve(
+        resolvedConfig.root,
+        resolvedConfig.build.outDir,
+        'manifest.json'
+      )
+      let manifest = {}
+      try {
+        const data = await fs.promises.readFile(manifestPath, 'utf8')
+        manifest = JSON.parse(data)
+      } catch (err) {
+        console.warn('Error parsing server manifest')
+      }
+
+      const promises = Object.keys(manifest).filter((key) => {
+        return key.endsWith('.css')
+      }).map(async (cssKey) => {
+        const item = manifest[cssKey]
+        if (item) {
+          const source = path.join(
+            resolvedConfig.root,
+            'dist/server',
+            item.file
+          )
+          const to = path.join(
+            resolvedConfig.root,
+            'dist/.client-assets',
+            'styles.css'
+          )
+          await fs.promises.mkdir(
+            dirname(to),
+            { recursive: true }
+          )
+          return fs.promises.rename(source, to).catch((err) => {
+            console.log(err)
+          })
+        }
+        return false
+      })
+
+      await Promise.all(promises)
+    }
+  }
 }

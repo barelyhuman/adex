@@ -5,6 +5,7 @@ import qs from 'node:querystring'
 import middleware from 'virtual:adex:middleware-entry'
 
 import { normalizePath } from 'vite'
+
 const viteDevServer = import.meta.env.DEV
 
 const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
@@ -19,8 +20,20 @@ const buildTemplate = ({
   mounter = '',
   prefillData = {}
 } = {}) => {
+  let styles = ''
+  if (!viteDevServer) {
+    styles = '<link rel="stylesheet" href="/assets/styles.css">'
+  } else {
+    styles = '<script src="/virtual:adex:style-entry" type="module"></script>'
+  }
+
   return getEntryHTML()
-    .replace('<!--app-head-->', '')
+    .replace(
+      '<!--app-head-->',
+      `
+     ${styles}
+    `
+    )
     .replace(
       '<!--app-body-->',
       `

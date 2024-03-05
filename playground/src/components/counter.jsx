@@ -4,7 +4,12 @@ export const CounterIsland = ({ count: propCount }) => {
   const [count, setCount] = useState(propCount)
   return (
     <>
-      <button onClick={() => setCount(count + 1)}>
+      <button
+        class='bg-red-400'
+        onClik={() => {
+          setCount(count + 1)
+        }}
+      >
         {count}
       </button>
     </>
