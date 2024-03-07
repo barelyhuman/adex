@@ -1,6 +1,6 @@
 import { renderToString } from 'adex/ssr'
 import { getEntryHTML, ms, routerUtils, Youch } from 'adex/utils'
-import { basename, resolve } from 'node:path'
+import { basename, extname, resolve } from 'node:path'
 import qs from 'node:querystring'
 import middleware from 'virtual:adex:middleware-entry'
 
@@ -18,21 +18,13 @@ export const sirvOptions = {
 const buildTemplate = ({
   page = '',
   mounter = '',
-  prefillData = {}
+  prefillData = {},
+  headTags = []
 } = {}) => {
-  let styles = ''
-  if (!viteDevServer) {
-    styles = '<link rel="stylesheet" href="/assets/styles.css">'
-  } else {
-    styles = '<script src="/virtual:adex:style-entry" type="module"></script>'
-  }
-
   return getEntryHTML()
     .replace(
       '<!--app-head-->',
-      `
-     ${styles}
-    `
+      headTags.join('\n')
     )
     .replace(
       '<!--app-body-->',
@@ -130,9 +122,73 @@ async function buildHandler ({ routes }) {
   )
 
   const pageLoader = async (mod, handlerMeta, req, res) => {
+    const url = req.url
+
+    const headTags = []
+
+    const manifest = await import('virtual:adex:server-manifest').then((d) =>
+      'default' in d ? d.default : d
+    ).catch((_) => undefined)
+    // Clean up the route normalization ,
+    // duplicate code
+    if (import.meta.env.DEV) {
+      const graphMod = await import('virtual:adex:dev-module-graph')
+      const graph = graphMod.graph
+      const matchedKey = Object.keys(graph).filter((x) => {
+        return x.endsWith('.page' + extname(x))
+      }).find((key) => {
+        let base = key
+          .replace(/(.js|.ts)x?$/, '')
+          .replace(/^(src\/pages)/, '')
+          .replace(/\.page$/, '')
+          .replace(/\/index$/, '/')
+          .replace(/\/$/, '')
+        if (!base) {
+          base = '/'
+        }
+        const matcher = routerUtils.paramMatcher(base, {
+          decode: decodeURIComponent
+        })
+        return matcher(url)
+      })
+      if (graph[matchedKey]) {
+        headTags.push(`<script type="module">
+          ${graph[matchedKey].map((d) => `import "${d}"`)}
+        </script>`)
+      }
+    } else if (manifest) {
+      const matchedKey = Object.keys(manifest).filter((x) => {
+        return x.endsWith(
+          '.page' + extname(x)
+        )
+      }).find((key) => {
+        let base = key
+          .replace(/(.js|.ts)x?$/, '')
+          .replace(/^(src\/pages)/, '')
+          .replace(/\.page$/, '')
+          .replace(/\/index$/, '/')
+          .replace(/\/$/, '')
+
+        if (!base) {
+          base = '/'
+        }
+        const matcher = routerUtils.paramMatcher(base, {
+          decode: decodeURIComponent
+        })
+        return matcher(url)
+      })
+
+      if (manifest[matchedKey]) {
+        manifest[matchedKey].css.forEach((path) => {
+          headTags.push(`<link rel="stylesheet" href="/${path}">`)
+        })
+      }
+    }
+
     const str = renderToString(mod.default())
     const html = buildTemplate({
-      page: str
+      page: str,
+      headTags
     })
     res.setHeader('content-type', 'text/html')
     res.write(html)

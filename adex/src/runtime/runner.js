@@ -9,13 +9,21 @@ const assets = sirv(__ADEX_CLIENT_BUILD_OUTPUT_DIR, {
   immutable: true
 })
 
+// eslint-disable-next-line no-undef
+const serverAssets = sirv(__ADEX_SERVER_BUILD_OUTPUT_DIR, {
+  maxAge: 24 * 60 * 60 * 1000, // 1d
+  immutable: true
+})
+
 const server = http.createServer((req, res) => {
   assets(req, res, () => {
-    handler(req, res, () => {
-      if (!res.writableEnded) {
-        res.statusCode = 404
-        res.end()
-      }
+    serverAssets(req, res, () => {
+      handler(req, res, () => {
+        if (!res.writableEnded) {
+          res.statusCode = 404
+          res.end()
+        }
+      })
     })
   })
 })
