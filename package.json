@@ -5,6 +5,7 @@
   "private": true,
   "description": "",
   "keywords": [],
+  "packageManager": "pnpm@9.4.0",
   "author": "reaper<ahoy@barelyhuman.dev>",
   "scripts": {
     "play": "pnpm --filter='playground' -r dev",
