@@ -124,9 +124,13 @@ async function buildHandler({ routes }) {
 
     const headTags = []
 
-    const manifestExists = fs.existsSync(
-      join(__ADEX_SERVER_BUILD_OUTPUT_DIR, 'manifest.json')
-    )
+    const manifestExists = false
+
+    if ('__ADEX_SERVER_BUILD_OUTPUT_DIR' in global) {
+      manifestExists = fs.existsSync(
+        join(__ADEX_SERVER_BUILD_OUTPUT_DIR, 'manifest.json')
+      )
+    }
     // Clean up the route normalization ,
     // duplicate code
     if (import.meta.env.DEV) {

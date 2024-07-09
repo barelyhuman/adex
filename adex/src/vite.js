@@ -348,6 +348,10 @@ function adexAnalyse(islands, cssImports) {
  * @returns {import("vite").Plugin}
  */
 function adexBundle(islands) {
+  const directories = {
+    client: 'dist/client',
+    server: 'dist/server',
+  }
   return {
     name: 'adex-bundle',
     apply: 'build',
@@ -356,12 +360,12 @@ function adexBundle(islands) {
       return {
         appType: 'custom',
         define: {
-          __ADEX_CLIENT_BUILD_OUTPUT_DIR: JSON.stringify('dist/client'),
-          __ADEX_SERVER_BUILD_OUTPUT_DIR: JSON.stringify('dist/server'),
+          __ADEX_CLIENT_BUILD_OUTPUT_DIR: JSON.stringify(directories.client),
+          __ADEX_SERVER_BUILD_OUTPUT_DIR: JSON.stringify(directories.server),
         },
         build: {
           copyPublicDir: true,
-          outDir: 'dist/server',
+          outDir: directories.server,
           ssr: true,
           manifest: 'manifest.json',
           ssrManifest: 'ssr.manifest.json',
