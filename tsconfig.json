@@ -5,6 +5,7 @@
     "jsxImportSource": "preact",
     "module": "ESNext",
     "target": "ESNext",
+    "noEmit": true,
     "moduleResolution": "Bundler",
     "types": ["vite/client"]
   }
