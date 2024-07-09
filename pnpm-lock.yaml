@@ -69,8 +69,8 @@ importers:
         specifier: ^8.0.1
         version: 8.0.1
       path-to-regexp:
-        specifier: ^7.0.0
-        version: 7.0.0
+        specifier: ^6.2.1
+        version: 6.2.1
       preact:
         specifier: '>=10'
         version: 10.19.4
@@ -2180,10 +2180,6 @@ packages:
 
   path-to-regexp@6.2.1:
     resolution: {integrity: sha512-JLyh7xT1kizaEvcaXOQwOc2/Yhw6KZOvPf1S8401UyLk86CU79LN3vl7ztXGm/pZ+YjoyAJ4rxmHwbkBXJX+yw==}
-
-  path-to-regexp@7.0.0:
-    resolution: {integrity: sha512-58Y94bQqF3zBIASFNiufRPH1NfgZth1qwZ35radL87sg8pgbVqr6uikAhqZtFD+w65MGH6SWnY/ly3GbrM4fbg==}
-    engines: {node: '>=16'}
 
   path-type@5.0.0:
     resolution: {integrity: sha512-5HviZNaZcfqP95rwpv+1HDgUamezbqdSYTyzjTvwtJSnIH+3vnbmWsItli8OFEndS984VT55M3jduxZbX351gg==}
@@ -4941,8 +4937,6 @@ snapshots:
       minipass: 5.0.0
 
   path-to-regexp@6.2.1: {}
-
-  path-to-regexp@7.0.0: {}
 
   path-type@5.0.0: {}
 

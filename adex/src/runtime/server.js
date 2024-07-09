@@ -124,13 +124,14 @@ async function buildHandler({ routes }) {
 
     const headTags = []
 
-    const manifestExists = false
+    let manifestExists = false
 
-    if ('__ADEX_SERVER_BUILD_OUTPUT_DIR' in global) {
+    if (typeof __ADEX_SERVER_BUILD_OUTPUT_DIR !== 'undefined') {
       manifestExists = fs.existsSync(
         join(__ADEX_SERVER_BUILD_OUTPUT_DIR, 'manifest.json')
       )
     }
+
     // Clean up the route normalization ,
     // duplicate code
     if (import.meta.env.DEV) {
@@ -181,7 +182,15 @@ async function buildHandler({ routes }) {
       }
     }
 
-    const str = renderToString(mod.default())
+    const serverLoader =
+      'loader' in mod
+        ? mod.loader({
+            req,
+            res,
+          })
+        : async () => ({})
+    const data = await serverLoader
+    const str = renderToString(mod.default({ serverProps: data }))
     const html = buildTemplate({
       page: str,
       headTags,

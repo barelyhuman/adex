@@ -4,7 +4,7 @@ export const Sidebar = ({ activeSidebar, setSidebar, sidebarItems }) => {
       {sidebarItems.map(x => (
         <div
           key={x.key}
-          class={`relative group space-y-2 text-zinc-400 hover:text-zinc-800 ${
+          class={`relative group mb-2 space-y-1 text-zinc-400 hover:text-zinc-800 ${
             activeSidebar.value === x.key ? 'text-black font-semibold' : ''
           }`}
         >
