@@ -1,24 +1,17 @@
 import { signal } from '@preact/signals'
 
 export const loader = ({ req }) => {
-  console.log({
-    q: req.query
-  })
   return {
-    greeting: req.params.name
+    greeting: req.params.name,
   }
 }
 
-const color = signal(
-  false
-)
+const color = signal(false)
 
-export default function Page ({ serverProps }) {
+export default function Page({ serverProps }) {
   return (
     <>
-      <h1 class={color.value ? 'active' : ''}>
-        Hello {serverProps.greeting}
-      </h1>
+      <h1 class={color.value ? 'active' : ''}>Hello {serverProps.greeting}</h1>
       <button
         onClick={() => {
           color.value = !color.value
@@ -26,7 +19,6 @@ export default function Page ({ serverProps }) {
       >
         Toggle Color
       </button>
-
     </>
   )
 }

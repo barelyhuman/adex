@@ -1,7 +1,8 @@
 import { renderToString } from 'adex/ssr'
 import { getEntryHTML, ms, routerUtils, Youch } from 'adex/utils'
-import { basename, extname, resolve } from 'node:path'
+import { basename, extname, join, resolve } from 'node:path'
 import qs from 'node:querystring'
+import fs from 'node:fs'
 import middleware from 'virtual:adex:middleware-entry'
 
 import { normalizePath } from 'vite'
@@ -12,20 +13,17 @@ const pageRoutes = import.meta.glob('./pages/**/*.page.{js,ts,jsx,tsx}')
 const apiRoutes = import.meta.glob('./pages/**/*.api.{js,ts,jsx,tsx}')
 
 export const sirvOptions = {
-  maxAge: ms('1m')
+  maxAge: ms('1m'),
 }
 
 const buildTemplate = ({
   page = '',
   mounter = '',
   prefillData = {},
-  headTags = []
+  headTags = [],
 } = {}) => {
   return getEntryHTML()
-    .replace(
-      '<!--app-head-->',
-      headTags.join('\n')
-    )
+    .replace('<!--app-head-->', headTags.join('\n'))
     .replace(
       '<!--app-body-->',
       `
@@ -44,7 +42,7 @@ const buildTemplate = ({
     )
 }
 
-async function buildHandler ({ routes }) {
+async function buildHandler({ routes }) {
   const routesForManifest = Object.entries(pageRoutes).map(
     ([path, modImport]) => {
       return {
@@ -52,7 +50,7 @@ async function buildHandler ({ routes }) {
         relativePath: normalizePath(path),
         importer: modImport,
         absolutePath: resolve(process.cwd(), path),
-        isDirectory: false
+        isDirectory: false,
       }
     }
   )
@@ -64,7 +62,7 @@ async function buildHandler ({ routes }) {
         relativePath: normalizePath(path),
         importer: modImport,
         absolutePath: resolve(process.cwd(), path),
-        isDirectory: false
+        isDirectory: false,
       }
     }
   )
@@ -79,7 +77,7 @@ async function buildHandler ({ routes }) {
           paths,
           routerUtils.defaultURLSorter
         )
-        return normalized.map((x) => {
+        return normalized.map(x => {
           x.url = x.url
             .replace(/\.page$/, '')
             .replace(/\/index$/, '/')
@@ -91,7 +89,7 @@ async function buildHandler ({ routes }) {
         })
       },
       transformer: routerUtils.expressTransformer,
-      sorter: routerUtils.defaultURLSorter
+      sorter: routerUtils.defaultURLSorter,
     }
   )
 
@@ -105,7 +103,7 @@ async function buildHandler ({ routes }) {
           paths,
           routerUtils.defaultURLSorter
         )
-        return normalized.map((x) => {
+        return normalized.map(x => {
           x.url = x.url
             .replace(/\.api$/, '')
             .replace(/\/index$/, '/')
@@ -117,7 +115,7 @@ async function buildHandler ({ routes }) {
         })
       },
       transformer: routerUtils.expressTransformer,
-      sorter: routerUtils.defaultURLSorter
+      sorter: routerUtils.defaultURLSorter,
     }
   )
 
@@ -126,60 +124,54 @@ async function buildHandler ({ routes }) {
 
     const headTags = []
 
-    const manifest = await import('virtual:adex:server-manifest').then((d) =>
-      'default' in d ? d.default : d
-    ).catch((_) => undefined)
+    const manifestExists = fs.existsSync(
+      join(__ADEX_SERVER_BUILD_OUTPUT_DIR, 'manifest.json')
+    )
     // Clean up the route normalization ,
     // duplicate code
     if (import.meta.env.DEV) {
       const graphMod = await import('virtual:adex:dev-module-graph')
       const graph = graphMod.graph
-      const matchedKey = Object.keys(graph).filter((x) => {
-        return x.endsWith('.page' + extname(x))
-      }).find((key) => {
-        let base = key
-          .replace(/(.js|.ts)x?$/, '')
-          .replace(/^(src\/pages)/, '')
-          .replace(/\.page$/, '')
-          .replace(/\/index$/, '/')
-          .replace(/\/$/, '')
-        if (!base) {
-          base = '/'
-        }
-        const matcher = routerUtils.paramMatcher(base, {
-          decode: decodeURIComponent
+      const matchedKey = Object.keys(graph)
+        .filter(x => {
+          return x.endsWith('.page' + extname(x))
         })
-        return matcher(url)
-      })
+        .find(k => isKeymatchingURL(url)(k))
       if (graph[matchedKey]) {
         headTags.push(`<script type="module">
-          ${graph[matchedKey].map((d) => `import "${d}"`)}
+          ${graph[matchedKey].map(d => `import "${d}"`)}
         </script>`)
       }
-    } else if (manifest) {
-      const matchedKey = Object.keys(manifest).filter((x) => {
-        return x.endsWith(
-          '.page' + extname(x)
+    } else if (manifestExists) {
+      const manifest = JSON.parse(
+        await fs.promises.readFile(
+          join(__ADEX_SERVER_BUILD_OUTPUT_DIR, 'manifest.json'),
+          'utf8'
         )
-      }).find((key) => {
-        let base = key
-          .replace(/(.js|.ts)x?$/, '')
-          .replace(/^(src\/pages)/, '')
-          .replace(/\.page$/, '')
-          .replace(/\/index$/, '/')
-          .replace(/\/$/, '')
-
-        if (!base) {
-          base = '/'
-        }
-        const matcher = routerUtils.paramMatcher(base, {
-          decode: decodeURIComponent
+      )
+      const matchedKey = Object.keys(manifest)
+        .filter(x => {
+          return x.endsWith('.page' + extname(x))
         })
-        return matcher(url)
-      })
+        .find(key => {
+          let base = key
+            .replace(/(.js|.ts)x?$/, '')
+            .replace(/^(src\/pages)/, '')
+            .replace(/\.page$/, '')
+            .replace(/\/index$/, '/')
+            .replace(/\/$/, '')
+
+          if (!base) {
+            base = '/'
+          }
+          const matcher = routerUtils.paramMatcher(base, {
+            decode: decodeURIComponent,
+          })
+          return matcher(url)
+        })
 
       if (manifest[matchedKey]) {
-        manifest[matchedKey].css.forEach((path) => {
+        manifest[matchedKey].css.forEach(path => {
           headTags.push(`<link rel="stylesheet" href="/${path}">`)
         })
       }
@@ -188,7 +180,7 @@ async function buildHandler ({ routes }) {
     const str = renderToString(mod.default())
     const html = buildTemplate({
       page: str,
-      headTags
+      headTags,
     })
     res.setHeader('content-type', 'text/html')
     res.write(html)
@@ -210,7 +202,7 @@ async function buildHandler ({ routes }) {
       req.query = Object.assign({}, qs.parse(query))
 
       let _resolve
-      const promise = new Promise((resolve) => {
+      const promise = new Promise(resolve => {
         _resolve = resolve
       })
 
@@ -222,9 +214,9 @@ async function buildHandler ({ routes }) {
 
       let mappedHandler
       let usingApi = false
-      const hasMappedPage = routesWithURL.find((item) => {
+      const hasMappedPage = routesWithURL.find(item => {
         const matcher = routerUtils.paramMatcher(item.url, {
-          decode: decodeURIComponent
+          decode: decodeURIComponent,
         })
 
         const matched = matcher(baseURL)
@@ -237,9 +229,9 @@ async function buildHandler ({ routes }) {
       mappedHandler = hasMappedPage
 
       if (!hasMappedPage) {
-        const hasMappedAPI = apiRoutesWithURL.find((item) => {
+        const hasMappedAPI = apiRoutesWithURL.find(item => {
           const matcher = routerUtils.paramMatcher(item.url, {
-            decode: decodeURIComponent
+            decode: decodeURIComponent,
           })
 
           const matched = matcher(baseURL)
@@ -280,6 +272,24 @@ async function buildHandler ({ routes }) {
     } finally {
       next()
     }
+  }
+}
+
+function isKeymatchingURL(url) {
+  return key => {
+    let base = key
+      .replace(/(.js|.ts)x?$/, '')
+      .replace(/^(src\/pages)/, '')
+      .replace(/\.page$/, '')
+      .replace(/\/index$/, '/')
+      .replace(/\/$/, '')
+    if (!base) {
+      base = '/'
+    }
+    const matcher = routerUtils.paramMatcher(base, {
+      decode: decodeURIComponent,
+    })
+    return matcher(url)
   }
 }
 

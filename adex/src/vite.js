@@ -3,7 +3,7 @@ import {
   findIslands,
   generateClientTemplate,
   injectIslandAST,
-  isFunctionIsland
+  isFunctionIsland,
 } from '@dumbjs/preland'
 import { addImportToAST, codeFromAST } from '@dumbjs/preland/ast'
 import preact from '@preact/preset-vite'
@@ -20,7 +20,7 @@ const JS_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx']
 /**
  * @returns {import("vite").Plugin[]}
  */
-export function adex () {
+export function adex() {
   return [
     virtualDefaultEntry({
       entry: '/src/server',
@@ -29,7 +29,7 @@ export function adex () {
       defaultContent: readFileSync(
         join(__dirname, './runtime/server.js'),
         'utf8'
-      )
+      ),
     }),
     virtualDefaultEntry({
       entry: '/src/app',
@@ -38,7 +38,7 @@ export function adex () {
       defaultContent: readFileSync(
         join(__dirname, './runtime/client.js'),
         'utf8'
-      )
+      ),
     }),
     virtualDefaultEntry({
       entry: '/src/middleware',
@@ -47,7 +47,7 @@ export function adex () {
       defaultContent: readFileSync(
         join(__dirname, './runtime/middleware.js'),
         'utf8'
-      )
+      ),
     }),
     virtualDefaultEntry({
       entry: '/src/runner',
@@ -56,21 +56,21 @@ export function adex () {
       defaultContent: readFileSync(
         join(__dirname, './runtime/runner.js'),
         'utf8'
-      )
+      ),
     }),
     preact(),
     resolveServerManifest(),
     resolveClientManifest(),
-    _adex()
+    _adex(),
   ]
 }
 
 // https://github.com/rakkasjs/rakkasjs/blob/1c552cc19e4f9165cf5d001fe3af5bc86fe7f527/packages/rakkasjs/src/vite-plugin/virtual-default-entry.ts#L11
-function virtualDefaultEntry ({
+function virtualDefaultEntry({
   defaultContent = '',
   entry = '',
   virtualName = '',
-  resolveName = true
+  resolveName = true,
 } = {}) {
   let fallback
   const exists = false
@@ -78,18 +78,15 @@ function virtualDefaultEntry ({
   return {
     name: 'adex:default-entry',
     enforce: 'pre',
-    async configResolved (config) {
+    async configResolved(config) {
       if (resolveName) {
-        fallback = path.resolve(config.root, entry.slice(1)).replace(
-          /\\/g,
-          '/'
-        )
+        fallback = path.resolve(config.root, entry.slice(1)).replace(/\\/g, '/')
       } else {
         fallback = 'virtual:adex:' + virtualName
       }
     },
 
-    async resolveId (id) {
+    async resolveId(id) {
       if (
         id === 'virtual:adex:' + virtualName ||
         id === '/virtual:adex:' + virtualName ||
@@ -100,26 +97,26 @@ function virtualDefaultEntry ({
       }
     },
 
-    async load (id) {
+    async load(id) {
       if (id === fallback && !exists) {
         return defaultContent
       }
-    }
+    },
   }
 }
 
 // https://github.com/rakkasjs/rakkasjs/blob/1c552cc19e4f9165cf5d001fe3af5bc86fe7f527/packages/rakkasjs/src/vite-plugin/resolve-client-manifest.ts#L11
-function resolveClientManifest () {
+function resolveClientManifest() {
   let resolvedConfig
   let dev = false
   const moduleId = 'virtual:adex:client-manifest'
   return {
     name: 'adex:resolve-client-manifest',
     enforce: 'pre',
-    config (cfg, env) {
+    config(cfg, env) {
       dev = env.command === 'serve'
     },
-    resolveId (id, _, options) {
+    resolveId(id, _, options) {
       if (id === moduleId) {
         if (dev || !options.ssr) {
           return id
@@ -130,17 +127,17 @@ function resolveClientManifest () {
       }
     },
 
-    load (id) {
+    load(id) {
       if (id === moduleId) {
         return 'export default undefined'
       }
     },
 
-    configResolved (config) {
+    configResolved(config) {
       resolvedConfig = config
     },
 
-    async closeBundle () {
+    async closeBundle() {
       if (resolvedConfig.command === 'serve' || resolvedConfig.build.ssr) {
         return
       }
@@ -156,51 +153,50 @@ function resolveClientManifest () {
         .catch(() => {
           // Ignore if the file doesn't exist
         })
-    }
+    },
   }
 }
 
-function resolveServerManifest () {
+function resolveServerManifest() {
   let resolvedConfig
   let dev = false
   const moduleId = 'virtual:adex:server-manifest'
   return {
-    name: 'adex:resolve-client-manifest',
-    enforce: 'pre',
-    config (cfg, env) {
+    name: 'adex:resolve-server-manifest',
+    enforce: 'post',
+    config(cfg, env) {
       dev = env.command === 'serve'
     },
-    resolveId (id, _, options) {
+    resolveId(id, _, options) {
       if (id === moduleId) {
         if (dev || !options.ssr) {
           return id
         }
-        return this.resolve(
-          path.resolve(
-            resolvedConfig.root,
-            resolvedConfig.build.outDir,
-            'manifest.json'
-          )
+
+        return path.resolve(
+          resolvedConfig.root,
+          resolvedConfig.build.outDir,
+          'manifest.json'
         )
       }
     },
 
-    load (id) {
+    load(id) {
       if (id === moduleId) {
         return 'export default undefined'
       }
     },
 
-    configResolved (config) {
+    configResolved(config) {
       resolvedConfig = config
-    }
+    },
   }
 }
 
 /**
  * @returns {import("vite").Plugin[]}
  */
-function _adex (options) {
+function _adex(options) {
   const islands = new Map()
   const cssImports = new Map()
   const cssCodeMap = new Map()
@@ -210,35 +206,33 @@ function _adex (options) {
     adexAnalyse(islands, cssImports),
     adexBundle(islands),
     adexStyles(cssCodeMap),
-    resolveDevModuleGraph(cssImports, cssCodeMap)
+    resolveDevModuleGraph(cssImports, cssCodeMap),
   ]
 }
 
 /**
  * @returns {import("vite").Plugin}
  */
-function adexServer (devServer) {
+function adexServer(devServer) {
   return {
     name: 'adex-server',
     enforce: 'post',
     apply: 'serve',
-    config () {
+    config() {
       return {
-        appType: 'custom'
+        appType: 'custom',
       }
     },
-    configureServer (_server) {
+    configureServer(_server) {
       devServer = _server
       return () => {
         _server.middlewares.use(async (req, res, next) => {
           try {
-            const mod = await devServer.ssrLoadModule(
-              'virtual:adex:server-entry',
-              {
-                fixStacktrace: true
-              }
-            )
-              .then((mod) => 'default' in mod ? mod.default : mod)
+            const mod = await devServer
+              .ssrLoadModule('virtual:adex:server-entry', {
+                fixStacktrace: true,
+              })
+              .then(mod => ('default' in mod ? mod.default : mod))
             await mod(req, res, next)
 
             if (!res.writableEnded) {
@@ -251,7 +245,7 @@ function adexServer (devServer) {
           }
         })
       }
-    }
+    },
   }
 }
 
@@ -260,29 +254,27 @@ function adexServer (devServer) {
  * @param {Set<string>} cssImports
  * @returns {import("vite").Plugin}
  */
-function adexAnalyse (islands, cssImports) {
+function adexAnalyse(islands, cssImports) {
   let currentConfig
   const rawVirtualId = getIslandVirtualName('')
   return {
     name: 'adex-analyse',
     enforce: 'pre',
-    configResolved (config) {
+    configResolved(config) {
       currentConfig = config
     },
-    async resolveId (id, importer) {
+    async resolveId(id, importer) {
       if (id.endsWith('.css')) {
         const existingCSSImports = cssImports.get(importer) || new Set()
         existingCSSImports.add((await this.resolve(id, importer)).id)
         cssImports.set(importer, existingCSSImports)
         return
       }
-      if (
-        !(id.startsWith(rawVirtualId) &&
-          id.startsWith('/' + rawVirtualId))
-      ) return
+      if (!(id.startsWith(rawVirtualId) && id.startsWith('/' + rawVirtualId)))
+        return
       return id
     },
-    async load (id, env) {
+    async load(id, env) {
       if (id.indexOf(rawVirtualId) === 0) {
         return id
       }
@@ -292,16 +284,12 @@ function adexAnalyse (islands, cssImports) {
 
       if (!hasIsland) return
 
-      return transformWithEsbuild(
-        hasIsland.template,
-        id,
-        {
-          jsx: 'automatic',
-          jsxImportSource: 'preact'
-        }
-      )
+      return transformWithEsbuild(hasIsland.template, id, {
+        jsx: 'automatic',
+        jsxImportSource: 'preact',
+      })
     },
-    async transform (source, id, ctx) {
+    async transform(source, id, ctx) {
       if (!ctx.ssr) return
 
       const extension = extname(normalizePath(id))
@@ -310,55 +298,48 @@ function adexAnalyse (islands, cssImports) {
       let islandsInCode = []
       try {
         islandsInCode = findIslands(source, {
-          isFunctionIsland: (ast) =>
+          isFunctionIsland: ast =>
             isFunctionIsland(ast, {
-              transpiledIdentifiers: DEFAULT_TRANSPILED_IDENTIFIERS.concat(
-                '_jsxDEV'
-              )
-            })
+              transpiledIdentifiers:
+                DEFAULT_TRANSPILED_IDENTIFIERS.concat('_jsxDEV'),
+            }),
         })
       } catch (err) {}
 
       if (!islandsInCode.length) return
 
-      islandsInCode.forEach((island) => {
+      islandsInCode.forEach(island => {
         injectIslandAST(island.ast, island)
         const addImport = addImportToAST(island.ast)
         addImport('h', 'preact', { named: true })
         addImport('Fragment', 'preact', { named: true })
 
         let clientTemplate = generateClientTemplate(island.id)
-        clientTemplate = clientTemplate.replace(
-          '<~~{importPath}~~>',
-          `${id}`
-        )
+        clientTemplate = clientTemplate.replace('<~~{importPath}~~>', `${id}`)
         islands.set(island.id, {
           ...island,
           virtualName: getIslandVirtualName(island.id),
-          template: clientTemplate
+          template: clientTemplate,
         })
       })
 
       let code = codeFromAST(islandsInCode[0].ast)
 
-      islandsInCode.forEach((island) => {
+      islandsInCode.forEach(island => {
         if (currentConfig.mode === 'development') {
           code = code.replace(
             `<~{${island.id}}~>`,
             `/${getIslandVirtualName(island.id)}`
           )
         } else {
-          code = code.replace(
-            `<~{${island.id}}~>`,
-            `/${island.id}.js`
-          )
+          code = code.replace(`<~{${island.id}}~>`, `/${island.id}.js`)
         }
       })
 
       return {
-        code
+        code,
       }
-    }
+    },
   }
 }
 
@@ -366,17 +347,17 @@ function adexAnalyse (islands, cssImports) {
  * @param {Map<string,unknown>} islands
  * @returns {import("vite").Plugin}
  */
-function adexBundle (islands) {
+function adexBundle(islands) {
   return {
     name: 'adex-bundle',
     apply: 'build',
     enforce: 'post',
-    config () {
+    config() {
       return {
         appType: 'custom',
         define: {
           __ADEX_CLIENT_BUILD_OUTPUT_DIR: JSON.stringify('dist/client'),
-          __ADEX_SERVER_BUILD_OUTPUT_DIR: JSON.stringify('dist/server')
+          __ADEX_SERVER_BUILD_OUTPUT_DIR: JSON.stringify('dist/server'),
         },
         build: {
           copyPublicDir: true,
@@ -388,21 +369,21 @@ function adexBundle (islands) {
           target: 'node18',
           rollupOptions: {
             input: {
-              index: 'virtual:adex:runner-entry'
+              index: 'virtual:adex:runner-entry',
             },
-            external: ['adex/utils', 'preact']
-          }
-        }
+            external: ['adex/utils', 'preact'],
+          },
+        },
       }
     },
-    async closeBundle () {
+    async closeBundle() {
       await mkdir('dist/client/assets', { recursive: true })
 
       if (!islands.size) {
         fs.existsSync('dist/.client-assets') &&
-          await fs.promises.cp('dist/.client-assets', 'dist/client/assets', {
-            recursive: true
-          })
+          (await fs.promises.cp('dist/.client-assets', 'dist/client/assets', {
+            recursive: true,
+          }))
         return
       }
 
@@ -418,17 +399,17 @@ function adexBundle (islands) {
           preact(),
           {
             name: 'adex-style-copier',
-            async closeBundle () {
+            async closeBundle() {
               fs.existsSync('dist/.client-assets') &&
-                await fs.promises.cp(
+                (await fs.promises.cp(
                   'dist/.client-assets',
                   'dist/client/assets',
                   {
-                    recursive: true
+                    recursive: true,
                   }
-                )
-            }
-          }
+                ))
+            },
+          },
         ],
         configFile: false,
         build: {
@@ -436,56 +417,54 @@ function adexBundle (islands) {
           ssr: false,
           target: 'esnext',
           manifest: true,
+          ssrManifest: 'manifest.json',
           rollupOptions: {
             input: asInputs,
             output: {
               entryFileNames: '[name].js',
-              format: 'esm'
-            }
-          }
-        }
+              format: 'esm',
+            },
+          },
+        },
       })
-    }
+    },
   }
 }
 
 /**
  * @param {Map<string,unknown>} islands
  */
-function adexIslandVirtuals (islands) {
+function adexIslandVirtuals(islands) {
   const virtualIslands = Object.fromEntries(
-    Array.from(islands.entries()).map(
-      ([k, v]) => [getIslandVirtualName(v.id), v.template]
-    )
+    Array.from(islands.entries()).map(([k, v]) => [
+      getIslandVirtualName(v.id),
+      v.template,
+    ])
   )
   const rawVirtualId = getIslandVirtualName('')
   return {
     name: 'adex-island-virtuals',
     enforce: 'pre',
-    resolveId (id) {
+    resolveId(id) {
       if (!id.includes(rawVirtualId)) return
       return id
     },
-    load (id) {
+    load(id) {
       if (!(id in virtualIslands)) {
         return
       }
 
-      return transformWithEsbuild(
-        virtualIslands[id],
-        id,
-        {
-          jsx: 'automatic',
-          jsxImportSource: 'preact',
-          jsxFactory: 'h',
-          jsxFragment: 'Fragment'
-        }
-      )
-    }
+      return transformWithEsbuild(virtualIslands[id], id, {
+        jsx: 'automatic',
+        jsxImportSource: 'preact',
+        jsxFactory: 'h',
+        jsxFragment: 'Fragment',
+      })
+    },
   }
 }
 
-function getIslandVirtualName (name) {
+function getIslandVirtualName(name) {
   return `virtual:adex:__island:${name}`
 }
 
@@ -493,35 +472,38 @@ function getIslandVirtualName (name) {
  * @param {Set<string>} cssCodeMap
  * @return {import("vite").Plugin}
  */
-function adexStyles (cssCodeMap) {
+function adexStyles(cssCodeMap) {
   let resolvedConfig
   return {
     name: 'adex-styles',
     enforce: 'post',
-    configResolved (config) {
+    configResolved(config) {
       resolvedConfig = config
     },
-    resolveId (id, importer) {
+    resolveId(id, importer) {
       if (id.endsWith('.css')) {
         return this.resolve(id, importer)
       }
     },
-    transform (code, id, env) {
+    transform(code, id, env) {
       if (!id.endsWith('.css')) return
       if (resolvedConfig.mode === 'development') return
-      const justCSS = code.replace('export default "', '').replace(/["]$/, '')
-        .replace(/\\\\n/gm, '').replace(/\\n/gm, '')
+      const justCSS = code
+        .replace('export default "', '')
+        .replace(/["]$/, '')
+        .replace(/\\\\n/gm, '')
+        .replace(/\\n/gm, '')
       const minifiedCode = cssTransform({
         filename: id,
         code: Buffer.from(justCSS),
         minify: true,
-        sourmap: true
+        sourmap: true,
       })
       cssCodeMap.set(id, minifiedCode.code.toString())
       return {
-        code
+        code,
       }
-    }
+    },
   }
 }
 
@@ -530,35 +512,30 @@ function adexStyles (cssCodeMap) {
  * @param {Set<string>} cssCodeMap
  * @return {import("vite").Plugin}
  */
-function resolveDevModuleGraph (cssImports, cssCodeMap) {
+function resolveDevModuleGraph(cssImports, cssCodeMap) {
   const moduleId = 'virtual:adex:dev-module-graph'
   let resolvedConfig
   return {
     name: 'adex-dev-module-graph',
     enforce: 'post',
     apply: 'serve',
-    configResolved (config) {
+    configResolved(config) {
       resolvedConfig = config
     },
-    async resolveId (id) {
-      if (
-        id === moduleId ||
-        id === '/' + moduleId
-      ) {
+    async resolveId(id) {
+      if (id === moduleId || id === '/' + moduleId) {
         return moduleId
       }
     },
-    async load (id) {
+    async load(id) {
       if (id === moduleId) {
-        const importEntries = Object.fromEntries(
-          cssImports.entries()
-        )
+        const importEntries = Object.fromEntries(cssImports.entries())
 
         const obj = Object.fromEntries(
           Object.entries(importEntries).map(([k, v]) => {
             const key = k.replace(join(resolvedConfig.root, 'src/pages'), '')
             if (v instanceof Set) {
-              return [key, Array.from(v.entries()).map((x) => x[1])]
+              return [key, Array.from(v.entries()).map(x => x[1])]
             }
             return [key, v]
           })
@@ -572,51 +549,5 @@ function resolveDevModuleGraph (cssImports, cssCodeMap) {
         `
       }
     },
-    async closeBundle (bundle) {
-      // if (resolvedConfig.command === 'serve' || !resolvedConfig.build.ssr) {
-      //   return
-      // }
-
-      // const manifestPath = path.resolve(
-      //   resolvedConfig.root,
-      //   resolvedConfig.build.outDir,
-      //   'manifest.json'
-      // )
-      // let manifest = {}
-      // try {
-      //   const data = await fs.promises.readFile(manifestPath, 'utf8')
-      //   manifest = JSON.parse(data)
-      // } catch (err) {
-      //   console.warn('Error parsing server manifest')
-      // }
-
-      // const promises = Object.keys(manifest).filter((key) => {
-      //   return key.endsWith('.css')
-      // }).map(async (cssKey) => {
-      //   const item = manifest[cssKey]
-      //   if (item) {
-      //     const source = path.join(
-      //       resolvedConfig.root,
-      //       'dist/server',
-      //       item.file
-      //     )
-      //     const to = path.join(
-      //       resolvedConfig.root,
-      //       'dist/.client-assets',
-      //       'styles.css'
-      //     )
-      //     await fs.promises.mkdir(
-      //       dirname(to),
-      //       { recursive: true }
-      //     )
-      //     return fs.promises.rename(source, to).catch((err) => {
-      //       console.log(err)
-      //     })
-      //   }
-      //   return false
-      // })
-
-      // await Promise.all(promises)
-    }
   }
 }

@@ -13,12 +13,14 @@
     "release": "pnpm -r publish --no-git-checks --filter='!playground'"
   },
   "license": "MIT",
+  "prettier": "@barelyhuman/prettier-config",
   "devDependencies": {
     "@antfu/ni": "^0.21.12",
+    "@barelyhuman/prettier-config": "^1.1.0",
     "@lerna-lite/changed": "^3.1.0",
     "@lerna-lite/cli": "^3.1.0",
     "@lerna-lite/version": "^3.1.0",
     "bumpp": "^9.2.1",
-    "standard": "^17.1.0"
+    "prettier": "^3.3.2"
   }
 }

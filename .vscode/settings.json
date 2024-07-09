@@ -1,5 +1,4 @@
 {
   "editor.formatOnSave": true,
-  "prettier.enable": false,
-  "standard.autoFixOnSave": true
+  "prettier.enable": true,
 }

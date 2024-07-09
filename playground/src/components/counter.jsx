@@ -1,17 +1,26 @@
 import { useState } from 'preact/hooks'
 
-export const CounterIsland = ({ count: propCount }) => {
-  const [count, setCount] = useState(propCount)
+export const CounterIsland = () => {
+  const [count, setCount] = useState(0)
   return (
-    <>
+    <div class='flex gap-2 items-center'>
       <button
-        class='bg-blue-400'
+        class='px-4 py-2 rounded-sm bg-zinc-800 text-zinc-50'
         onClick={() => {
           setCount(count + 1)
         }}
       >
-        {count}
+        -
       </button>
-    </>
+      <p>{count}</p>
+      <button
+        class='px-4 py-2 rounded-sm bg-zinc-800 text-zinc-50'
+        onClick={() => {
+          setCount(count + 1)
+        }}
+      >
+        +
+      </button>
+    </div>
   )
 }
