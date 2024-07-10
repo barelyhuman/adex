@@ -15,11 +15,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '18.x'
+          corepack-enable: true
           registry-url: 'https://registry.npmjs.org'
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Deps
         run: |

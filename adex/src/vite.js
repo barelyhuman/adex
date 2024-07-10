@@ -266,7 +266,9 @@ function adexAnalyse(islands, cssImports) {
     async resolveId(id, importer) {
       if (id.endsWith('.css')) {
         const existingCSSImports = cssImports.get(importer) || new Set()
-        existingCSSImports.add((await this.resolve(id, importer)).id)
+        const resolved = await this.resolve(id, importer)
+        if (!resolved) return
+        existingCSSImports.add(resolved.id)
         cssImports.set(importer, existingCSSImports)
         return
       }
