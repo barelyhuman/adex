@@ -137,7 +137,13 @@ async function buildHandler({ routes }) {
     if (import.meta.env.DEV) {
       const graphMod = await import('virtual:adex:dev-module-graph')
       const graph = graphMod.graph
-      const matchedKey = Object.keys(graph)
+      const graphKeys = Object.keys(graph)
+
+      getCSSPathsFromGraph(graph).forEach(p => {
+        headTags.push(`<link rel="stylesheet" href="${p}">`)
+      })
+
+      const matchedKey = graphKeys
         .filter(x => {
           return x.endsWith('.page' + extname(x))
         })
@@ -176,7 +182,7 @@ async function buildHandler({ routes }) {
         })
 
       if (manifest[matchedKey]) {
-        manifest[matchedKey].css.forEach(path => {
+        ;(manifest[matchedKey].css || []).forEach(path => {
           headTags.push(`<link rel="stylesheet" href="/${path}">`)
         })
       }
@@ -304,6 +310,19 @@ function isKeymatchingURL(url) {
     })
     return matcher(url)
   }
+}
+
+function getCSSPathsFromGraph(graph) {
+  return Object.keys(graph)
+    .map(d => graph[d])
+    .map(d => {
+      return d.filter(x => x.endsWith('.css'))
+    })
+    .flat(2)
+    .reduce((acc, item) => {
+      acc.add(item)
+      return acc
+    }, new Set())
 }
 
 export default await buildHandler({ routes: pageRoutes })
