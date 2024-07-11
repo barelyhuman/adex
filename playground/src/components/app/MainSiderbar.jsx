@@ -1,10 +1,11 @@
 import { Sidebar } from '../Sidebar'
 import { marked } from 'marked'
 import { signal } from '@preact/signals'
+import { Content } from '../Content'
 
 const md = String.raw
 
-export const sidebarItems = [
+const sidebarItems = [
   {
     key: 'introduction',
     label: 'Introduction',
@@ -24,16 +25,25 @@ with preact.
   },
 ]
 
-export const activeSidebar = signal(sidebarItems[0].key)
+const activeSidebar = signal(sidebarItems[0].key)
 
-export const MainSidebar = () => {
+export const ContentSplit = () => {
   return (
-    <Sidebar
-      activeSidebar={activeSidebar}
-      setSidebar={key => {
-        activeSidebar.value = key
-      }}
-      sidebarItems={sidebarItems}
-    />
+    <main class="flex gap-10">
+      <Sidebar
+        activeSidebar={activeSidebar}
+        setSidebar={key => {
+          activeSidebar.value = key
+        }}
+        sidebarItems={sidebarItems}
+      />
+      <Content
+        id="introduction"
+        class="flex-3"
+        dangerouslySetInnerHTML={{
+          __html: sidebarItems.find(x => x.key === activeSidebar.value).content,
+        }}
+      />
+    </main>
   )
 }
