@@ -1,32 +1,11 @@
 import { Content } from '../components/Content.jsx'
 import { BaseLayout } from '../components/layout/base.jsx'
-import { marked } from 'marked'
-import { signal } from '@preact/signals'
-import { Sidebar } from '../components/Sidebar.jsx'
 
-const md = String.raw
-
-const sidebarItems = [
-  {
-    key: 'introduction',
-    label: 'Introduction',
-    content: await marked.parse(md`
-### Introduction</h3>
-
-**_Adex_** is a vite plugin to simplify server rendered apps your development
-with preact.
-    `),
-  },
-  {
-    key: 'getting-started',
-    label: 'Getting Started',
-    content: await marked.parse(md`
-### Getting Started
-    `),
-  },
-]
-
-const activeSidebar = signal(sidebarItems[0].key)
+import {
+  activeSidebar,
+  MainSidebar,
+  sidebarItems,
+} from '../components/app/MainSiderbar.jsx'
 
 export default function () {
   return (
@@ -36,13 +15,7 @@ export default function () {
         <small>Vite + Preact for minimalists</small>
       </header>
       <main class="flex gap-10">
-        <Sidebar
-          activeSidebar={activeSidebar}
-          setSidebar={key => {
-            activeSidebar.value = key
-          }}
-          sidebarItems={sidebarItems}
-        />
+        <MainSidebar />
         <Content
           id="introduction"
           class="flex-3"
