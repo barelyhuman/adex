@@ -10,7 +10,6 @@
   "scripts": {
     "play": "pnpm --filter='playground' -r dev",
     "test": "echo 'true'",
-    "next": "lerna version --sync-workspace-lock",
     "release": "pnpm -r publish --no-git-checks --filter='!playground'"
   },
   "license": "MIT",
