@@ -2,8 +2,13 @@ import { existsSync, readFileSync } from 'node:fs'
 import http from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { sirv } from 'adex/ssr'
+import { sirv, mri } from 'adex/ssr'
 import { handler } from 'virtual:adex:handler'
+
+const flags = mri(process.argv.slice(2))
+
+const PORT = flags.port || process.env.PORT || 3000
+const HOST = flags.host || process.env.HOST || 'localhost'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -122,6 +127,6 @@ http
       defaultHandler(req, res)
     })
   })
-  .listen(3000, () => {
-    console.log('Listening on 3000')
+  .listen(PORT, HOST, () => {
+    console.log(`Listening on ${HOST}:${PORT}`)
   })

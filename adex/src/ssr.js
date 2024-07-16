@@ -1,6 +1,6 @@
 export { renderToString } from 'preact-render-to-string'
 export { default as sirv } from 'sirv'
-export { Trouter as Router } from 'trouter'
+export { default as mri } from 'mri'
 import { parse } from 'regexparam'
 
 // taken from

@@ -20,6 +20,9 @@ importers:
 
   adex:
     dependencies:
+      mri:
+        specifier: ^1.2.0
+        version: 1.2.0
       preact:
         specifier: ^10.22.0
         version: 10.22.1
