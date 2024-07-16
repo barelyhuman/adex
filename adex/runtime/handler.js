@@ -1,4 +1,4 @@
-import { normalizeRouteImports, renderToString } from 'adex/ssr'
+import { normalizeRouteImports, renderToString, toStatic } from 'adex/ssr'
 import { h } from 'preact'
 
 const apiRoutes = import.meta.glob('/src/api/**/*.{js,ts}')
@@ -42,16 +42,34 @@ export async function handler(req, res) {
     }
   }
 
+  const { metas, links, title } = toStatic()
+
   return {
-    html: renderToString(h(HTMLTemplate, {}, '404 | Not Found')),
+    html: renderToString(
+      h(
+        HTMLTemplate,
+        {
+          metas,
+          links,
+          title,
+        },
+        '404 | Not Found'
+      )
+    ),
   }
 }
 
-function HTMLTemplate({ entryPage, children }) {
+function HTMLTemplate({ metas = [], links = [], title, entryPage, children }) {
   return h(
     'html',
     {},
-    h('head', {}),
+    h(
+      'head',
+      {},
+      h('title', {}, title),
+      ...links.map(props => h('link', { ...props })),
+      ...metas.map(props => h('meta', { ...props }))
+    ),
     h(
       'body',
       {},

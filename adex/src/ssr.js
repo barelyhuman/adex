@@ -2,6 +2,7 @@ export { renderToString } from 'preact-render-to-string'
 export { default as sirv } from 'sirv'
 export { default as mri } from 'mri'
 import { parse } from 'regexparam'
+export { toStatic } from 'hoofd/preact'
 
 // taken from
 // https://github.com/cyco130/smf/blob/c4b601f48cd3b3b71bea6d76b52b9a85800813e4/smf/shared.ts#L22

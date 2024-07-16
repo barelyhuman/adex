@@ -5,6 +5,7 @@
   "exports": {
     "./package.json": "./package.json",
     "./ssr": "./src/ssr.js",
+    "./head": "./src/head.js",
     ".": "./src/vite.js"
   },
   "files": [
@@ -17,6 +18,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "hoofd": "^1.7.1",
     "mri": "^1.2.0",
     "preact-render-to-string": "^6.5.5",
     "regexparam": "^3.0.0",
