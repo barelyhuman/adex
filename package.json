@@ -16,12 +16,8 @@
   "license": "MIT",
   "prettier": "@barelyhuman/prettier-config",
   "devDependencies": {
-    "@antfu/ni": "^0.21.12",
+    "@changesets/cli": "^2.27.7",
     "@barelyhuman/prettier-config": "^1.1.0",
-    "@lerna-lite/changed": "^3.7.0",
-    "@lerna-lite/cli": "^3.7.0",
-    "@lerna-lite/version": "^3.7.0",
-    "bumpp": "^9.4.1",
     "prettier": "^3.3.2"
   }
 }
