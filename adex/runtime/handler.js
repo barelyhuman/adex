@@ -7,6 +7,9 @@ const pageRoutes = import.meta.glob('/src/pages/**/*.{tsx,jsx,js}')
 export async function handler(req, res) {
   res.statusCode = 200
 
+  prepareRequest(req)
+  prepareResponse(res)
+
   const { pageRouteMap, apiRouteMap } = await getRouterMaps()
   const baseURL = req.url
 
@@ -27,6 +30,10 @@ export async function handler(req, res) {
         HTMLTemplate,
         {
           entryPage: pageRouteMap[matchedInPages].route,
+          routeParams: Buffer.from(
+            JSON.stringify(routeParams),
+            'utf8'
+          ).toString('base64'),
         },
         h(render, { routeParams })
       )
@@ -59,7 +66,14 @@ export async function handler(req, res) {
   }
 }
 
-function HTMLTemplate({ metas = [], links = [], title, entryPage, children }) {
+function HTMLTemplate({
+  metas = [],
+  links = [],
+  title,
+  entryPage,
+  routeParams,
+  children,
+}) {
   return h(
     'html',
     {},
@@ -78,6 +92,7 @@ function HTMLTemplate({ metas = [], links = [], title, entryPage, children }) {
         {
           'id': 'app',
           'data-entry-page': entryPage,
+          'data-route-params': routeParams,
         },
         ...[].concat(children)
       )
@@ -111,4 +126,65 @@ function regexToParams(routeMap, routeMapKey, regexMatchGroup) {
     acc[key] = regexMatchGroup[index + 1]
     return acc
   }, {})
+}
+
+/**
+ *
+ * @param {import("node:http").IncomingMessage} req
+ */
+function prepareRequest(req) {
+  req.parseBodyJSON = async function () {
+    return new Promise((resolve, reject) => {
+      let jsonChunk = ''
+      req.on('data', chunk => {
+        jsonChunk += chunk
+      })
+      req.on('error', err => {
+        const oldStack = err.stack
+        const newError = new Error(
+          `failed to parse json body with error: ${err.message}`
+        )
+        newError.stack = oldStack + newError.stack
+        reject(newError)
+      })
+      req.on('end', () => {
+        try {
+          const parsedJSON = JSON.parse(Buffer.from(jsonChunk).toString('utf8'))
+          resolve(parsedJSON)
+        } catch (err) {
+          reject(err)
+        }
+      })
+    })
+  }
+}
+
+/**
+ *
+ * @param {import("node:http").ServerResponse} res
+ */
+function prepareResponse(res) {
+  res.html = data => {
+    if (typeof data !== 'string') {
+      throw new Error('[res.html] only accepts html string')
+    }
+    res.setHeader('content-type', 'text/html')
+    res.write(data)
+    res.end()
+  }
+  res.text = data => {
+    let _data = data
+    if (typeof data !== 'string') {
+      _data = JSON.stringify(data)
+    }
+    res.setHeader('content-type', 'text/plain')
+    res.write(_data)
+    res.end()
+  }
+  res.json = data => {
+    const str = JSON.stringify(data)
+    res.setHeader('content-type', 'application/json')
+    res.write(str)
+    res.end()
+  }
 }

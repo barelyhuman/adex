@@ -1,3 +1,3 @@
 export default (req, res) => {
-  return res.end(`Hello from ${req.params.id}`)
+  return res.text(`Hello from ${req.params.id}`)
 }
