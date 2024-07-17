@@ -1,6 +1,6 @@
 {
   "name": "adex",
-  "version": "0.0.6-beta.2",
+  "version": "0.0.6",
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
