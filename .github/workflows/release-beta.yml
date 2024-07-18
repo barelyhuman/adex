@@ -3,7 +3,7 @@ name: release
 on:
   push:
     tags:
-      - "*-beta.*"
+      - '*-beta.*'
 
 jobs:
   publish_beta:
@@ -18,9 +18,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "18.x"
-          registry-url: "https://registry.npmjs.org"
-          cache: "pnpm"
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm i
@@ -30,6 +30,6 @@ jobs:
 
       - name: Publish
         run: |
-          pnpm release --tag beta
+          pnpm publish:ci --dist-tag beta
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

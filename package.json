@@ -1,6 +1,5 @@
 {
   "name": "adex-root",
-  "version": "0.0.0",
   "type": "module",
   "private": true,
   "description": "",
@@ -10,13 +9,16 @@
   "scripts": {
     "play": "pnpm --filter='playground' -r dev",
     "test": "echo 'true'",
-    "release": "pnpm -r publish --no-git-checks --filter='!playground'"
+    "publish:ci": "lerna publish from-git --registry 'https://registry.npmjs.org' --yes",
+    "next": "lerna version --sync-workspace-lock"
   },
   "license": "MIT",
   "prettier": "@barelyhuman/prettier-config",
   "devDependencies": {
-    "@changesets/cli": "^2.27.7",
     "@barelyhuman/prettier-config": "^1.1.0",
+    "@lerna-lite/cli": "^3.7.1",
+    "@lerna-lite/publish": "^3.7.1",
+    "@lerna-lite/version": "^3.7.1",
     "prettier": "^3.3.2"
   }
 }
