@@ -1,7 +1,10 @@
 {
   "$schema": "node_modules/@lerna-lite/cli/schemas/lerna-schema.json",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "changelogPreset": "angular",
   "npmClient": "pnpm",
-  "packages": ["adex", "playground"]
+  "packages": [
+    "adex",
+    "playground"
+  ]
 }
