@@ -1,6 +1,20 @@
 {
   "name": "adex",
   "version": "0.0.6",
+  "description": "An easier way to build apps with Vite and Preact",
+  "keywords": [
+    "adex",
+    "meta-framework",
+    "preact",
+    "minimal",
+    "server",
+    "node"
+  ],
+  "bugs": "github.com/barelyhuman/adex/issues",
+  "repository": {
+    "type": "git",
+    "url": "github.com/barelyhuman/adex"
+  },
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
