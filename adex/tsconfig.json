@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "es2020",
+    "checkJs": true,
+    "moduleResolution": "node",
+    "noEmit": true,
+    "types": ["vite/client"],
+    "paths": {
+      "adex": ["./src/vite.js"],
+      "adex/*": ["./src/*"]
+    }
+  }
+}

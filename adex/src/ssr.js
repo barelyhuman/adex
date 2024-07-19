@@ -61,7 +61,7 @@ export function normalizeRouteImports(imports, baseKeyMatcher) {
       }
     })
     .reduce((acc, item) => {
-      acc[item.regex.pattern] = item
+      acc[item.routePath] = item
       return acc
     }, {})
 }

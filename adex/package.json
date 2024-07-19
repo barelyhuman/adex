@@ -18,9 +18,22 @@
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
-    "./ssr": "./src/ssr.js",
-    "./head": "./src/head.js",
-    ".": "./src/vite.js"
+    "./ssr": {
+      "types": "./src/ssr.d.ts",
+      "import": "./src/ssr.js"
+    },
+    "./head": {
+      "types": "./src/head.d.ts",
+      "import": "./src/head.js"
+    },
+    "./hook": {
+      "types": "./src/hook.d.ts",
+      "import": "./src/hook.js"
+    },
+    ".": {
+      "types": "./src/vite.d.ts",
+      "import": "./src/vite.js"
+    }
   },
   "files": [
     "src",

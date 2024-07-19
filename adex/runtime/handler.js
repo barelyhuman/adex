@@ -1,8 +1,11 @@
+import { CONSTANTS, emitToHooked } from 'adex/hook'
 import { normalizeRouteImports, renderToString, toStatic } from 'adex/ssr'
 import { h } from 'preact'
 
 const apiRoutes = import.meta.glob('/src/api/**/*.{js,ts}')
 const pageRoutes = import.meta.glob('/src/pages/**/*.{tsx,jsx,js}')
+
+const html = String.raw
 
 export async function handler(req, res) {
   res.statusCode = 200
@@ -21,83 +24,86 @@ export async function handler(req, res) {
     return apiRouteMap[d].regex.pattern.test(baseURL)
   })
 
+  const { metas, links, title, lang } = toStatic()
+
   if (pageRouteMap[matchedInPages]) {
     const module = await pageRouteMap[matchedInPages].module()
     const render = 'default' in module ? module.default : module
     const routeParams = getRouteParams(baseURL, pageRouteMap, matchedInPages)
-    const htmlString = renderToString(
-      h(
-        HTMLTemplate,
-        {
-          entryPage: pageRouteMap[matchedInPages].route,
-          routeParams: Buffer.from(
-            JSON.stringify(routeParams),
-            'utf8'
-          ).toString('base64'),
-        },
-        h(render, { routeParams })
-      )
-    )
-    return { html: htmlString, pageRoute: pageRouteMap[matchedInPages].route }
+
+    const htmlString = HTMLTemplate({
+      metas,
+      links,
+      title,
+      lang,
+      entryPage: pageRouteMap[matchedInPages].route,
+      routeParams: Buffer.from(JSON.stringify(routeParams), 'utf8').toString(
+        'base64'
+      ),
+      body: renderToString(h(render, { routeParams })),
+    })
+    const modifiableContext = {
+      req: req,
+      html: htmlString,
+    }
+    await emitToHooked(CONSTANTS.pageRender, modifiableContext)
+    return {
+      html: modifiableContext.html,
+      pageRoute: pageRouteMap[matchedInPages].route,
+    }
   } else if (apiRouteMap[matchedInAPI]) {
     const module = await apiRouteMap[matchedInAPI].module()
     const routeParams = getRouteParams(baseURL, apiRouteMap, matchedInAPI)
     req.params = routeParams
+    const modifiableContext = {
+      req: req,
+    }
+    await emitToHooked(CONSTANTS.apiCall, modifiableContext)
     return {
       serverHandler:
         'default' in module ? module.default : (_, res) => res.end(),
     }
   }
 
-  const { metas, links, title } = toStatic()
-
   return {
-    html: renderToString(
-      h(
-        HTMLTemplate,
-        {
-          metas,
-          links,
-          title,
-        },
-        '404 | Not Found'
-      )
-    ),
+    html: HTMLTemplate({
+      metas,
+      links,
+      title,
+      lang,
+      body: '404 | Not Found',
+    }),
   }
 }
 
 function HTMLTemplate({
   metas = [],
   links = [],
-  title,
-  entryPage,
-  routeParams,
-  children,
+  title = '',
+  lang = '',
+  entryPage = '',
+  routeParams = {},
+  body = '',
 }) {
-  return h(
-    'html',
-    {},
-    h(
-      'head',
-      {},
-      h('title', {}, title),
-      ...links.map(props => h('link', { ...props })),
-      ...metas.map(props => h('meta', { ...props }))
-    ),
-    h(
-      'body',
-      {},
-      h(
-        'div',
-        {
-          'id': 'app',
-          'data-entry-page': entryPage,
-          'data-route-params': routeParams,
-        },
-        ...[].concat(children)
-      )
-    )
-  )
+  const headString = stringify(title, metas, links)
+  return html`
+    <!doctype html>
+    <html lang="${lang ?? 'en'}">
+      <head>
+        <meta charset="UTF-8" />
+        ${headString}
+      </head>
+      <body>
+        <div
+          id="app"
+          data-entry-page="${entryPage}"
+          data-route-params="${routeParams}"
+        >
+          ${body}
+        </div>
+      </body>
+    </html>
+  `
 }
 
 async function getRouterMaps() {
@@ -187,4 +193,21 @@ function prepareResponse(res) {
     res.write(str)
     res.end()
   }
+}
+
+const stringify = (title, metas, links) => {
+  const stringifyTag = (tagName, tags) =>
+    tags.reduce((acc, tag) => {
+      ;`${acc}<${tagName}${Object.keys(tag).reduce(
+        (properties, key) => `${properties} ${key}="${tag[key]}"`,
+        ''
+      )}>`
+    }, '')
+
+  return `
+    <title>${title}</title>
+
+    ${stringifyTag('meta', metas)}
+    ${stringifyTag('link', links)}
+  `
 }
