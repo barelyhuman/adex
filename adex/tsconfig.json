@@ -4,6 +4,7 @@
     "module": "es2020",
     "checkJs": true,
     "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
     "noEmit": true,
     "types": ["vite/client"],
     "paths": {

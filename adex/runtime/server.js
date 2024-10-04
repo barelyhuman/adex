@@ -2,7 +2,11 @@ import { existsSync, readFileSync } from 'node:fs'
 import http from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+//@ts-expect-error internal requires
 import { sirv, mri } from 'adex/ssr'
+
+//@ts-expect-error vite virtual import
 import { handler } from 'virtual:adex:handler'
 
 const flags = mri(process.argv.slice(2))
@@ -68,15 +72,25 @@ function addDependencyAssets(template, pageRoute) {
   }
   const manifest = getClientManifest()
   let links = []
-  const filePath = join('src', pageRoute)
+  let scripts = []
+  const filePath = pageRoute.startsWith('/') ? pageRoute.slice(1) : pageRoute
   if (manifest[filePath]) {
     const graph = manifest[filePath]
     links = (graph.css || []).map(
       d =>
         `<link rel="stylesheet" href="/${d.replace(/^(\/?assets\/?)/, 'client/assets/')}" >`
     )
+    scripts = (graph.imports || [])
+      .filter(d => d !== 'virtual:adex:client')
+      .map(d => {
+        const modulePath = manifest[d]
+        return `<script type="module" src="/${modulePath.file.replace(/^(\/?assets\/?)/, 'client/assets/')}" ></script>`
+      })
   }
-  return template.replace('</head>', links.join('\n') + '</head>')
+  return template.replace(
+    '</head>',
+    links.join('\n') + scripts.join('\n') + '</head>'
+  )
 }
 
 function attachRootAssets(template) {
