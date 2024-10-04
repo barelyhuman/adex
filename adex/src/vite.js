@@ -30,8 +30,12 @@ export function adex() {
   ]
 }
 
+/**
+ * @returns {import("vite").Plugin}
+ */
 function createUserDefaultVirtualModule(id, content, userPath) {
   return {
+    name: `adex-virtual-user-default-${id}`,
     enforce: 'pre',
     async resolveId(requestId) {
       if (
@@ -56,6 +60,7 @@ function createUserDefaultVirtualModule(id, content, userPath) {
  */
 function createVirtualModule(id, content) {
   return {
+    name: `adex-virtual-${id}`,
     enforce: 'pre',
     resolveId(requestId) {
       if (requestId === id || requestId === '/' + id) {
@@ -122,6 +127,7 @@ function adexServerBuilder() {
   let input = 'src/entry-server.js'
   let options
   return {
+    name: `adex-server`,
     enforce: 'pre',
     /**
      * @returns {import("vite").UserConfig}
