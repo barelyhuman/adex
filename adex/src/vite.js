@@ -152,7 +152,7 @@ function adexServerBuilder() {
       return {
         appType: 'custom',
         ssr: {
-          external: ['preact', 'adex'],
+          external: ['preact', 'adex', 'preact-render-to-string'],
         },
         build: {
           assetsDir: 'assets',
