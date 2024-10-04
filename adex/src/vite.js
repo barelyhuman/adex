@@ -3,10 +3,18 @@ import { readFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { build } from 'vite'
+import { fonts as enableFonts } from './fonts.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-export function adex() {
+/**
+ *
+ * @param {import("./vite").AdexOptions} options
+ * @returns
+ */
+export function adex({ fonts }) {
+  enableFonts(fonts)
+
   return [
     createUserDefaultVirtualModule(
       'virtual:adex:global.css',

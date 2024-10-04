@@ -1,69 +1,45 @@
 import { createUnifont } from 'unifont'
+import { beforePageRender } from 'adex/hook'
 export { providers } from 'unifont'
 
-/**
- * @returns {import("vite").Plugin}
- */
 export function fonts({ providers = [], families = [] } = {}) {
-  let globalCSSDetails
-  return {
-    name: 'adex-fonts',
-    enforce: 'pre',
+  beforePageRender(async function (page) {
+    const unifont = await createUnifont([...providers])
+    const fontsToResolve = families.map(userFamily => {
+      return unifont
+        .resolveFontFace(userFamily.name, {
+          weights: userFamily.weights,
+          styles: userFamily.styles,
+          subsets: [],
+        })
+        .then(resolvedFont => {
+          const toUse = resolvedFont.fonts.filter(
+            d =>
+              []
+                .concat(d.weight)
+                .map(String)
+                .find(d => userFamily.weights.includes(d)) ?? false
+          )
 
-    async transform(code, id) {
-      if (!globalCSSDetails) {
-        globalCSSDetails = await this.resolve('virtual:adex:global.css')
-      }
+          return { fonts: toUse, name: userFamily.name }
+        })
+    })
+    const fontImports = []
+    for await (let resolvedFont of fontsToResolve) {
+      const fontFace = fontsToFontFace(resolvedFont)
+      fontImports.push(fontFace.join('\n'))
+    }
 
-      if (globalCSSDetails.id !== id) {
-        return
-      }
-      const unifont = await createUnifont([...providers])
-      const fontsToResolve = families.map(userFamily => {
-        return unifont
-          .resolveFontFace(userFamily.name, {
-            weights: userFamily.weights,
-            styles: userFamily.styles,
-            subsets: [],
-          })
-          .then(resolvedFont => {
-            const toUse = resolvedFont.fonts.filter(
-              d =>
-                []
-                  .concat(d.weight)
-                  .map(String)
-                  .find(d => userFamily.weights.includes(d)) ?? false
-            )
-
-            return { fonts: toUse, name: userFamily.name }
-          })
-      })
-
-      const fontImports = []
-      for await (let resolvedFont of fontsToResolve) {
-        const fontFace = fontsToFontFace(resolvedFont)
-        fontImports.push(fontFace.join('\n'))
-      }
-
-      const lines = code.split('\n')
-      let finalCodeLines = []
-      if (code.startsWith('@import')) {
-        const lastImportAt = lines.findIndex(
-          lines => !lines.startsWith('@import')
-        )
-        finalCodeLines = insertAt(lines, lastImportAt, fontImports)
-      } else {
-        finalCodeLines = [].concat(fontImports).concat(lines)
-      }
-      return {
-        code: finalCodeLines.join('\n'),
-      }
-    },
-  }
-}
-
-function insertAt(array, index, data) {
-  return array.slice(0, index).concat(data).concat(array.slice(index))
+    page.html = page.html.replace(
+      '</head>',
+      `
+      <style type="text/css">
+          ${fontImports.join('\n')}
+      </style>
+      </head>
+    `
+    )
+  })
 }
 
 function fontsToFontFace(resolvedFont) {

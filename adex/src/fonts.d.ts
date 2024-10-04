@@ -5,13 +5,13 @@ import {
 import { Plugin } from 'vite'
 export { providers } from 'unifont'
 
-type FontFamilies = {
+export type FontFamilies = {
   name: string
   weights: string[]
   styles: Array<'normal' | 'italic' | 'oblique'> // ResolveFontFacesOptions['styles']
 }
 
-type Options = {
+export type Options = {
   providers: (typeof providers)[]
   families: FontFamilies[]
 }
