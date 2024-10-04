@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
-    "module": "es2020",
+    "module": "esnext",
+    "target": "esnext",
     "checkJs": true,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,

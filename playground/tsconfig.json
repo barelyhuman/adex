@@ -2,6 +2,10 @@
   "compilerOptions": {
     "allowJs": true,
     "noEmit": true,
-    "moduleResolution": "Node"
+    "moduleResolution": "Node",
+    "paths": {
+      "adex": ["../adex/vite.js"],
+      "adex/*": ["../adex/src/*"]
+    }
   }
 }

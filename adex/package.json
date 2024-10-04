@@ -30,6 +30,10 @@
       "types": "./src/hook.d.ts",
       "import": "./src/hook.js"
     },
+    "./fonts": {
+      "types": "./src/fonts.d.ts",
+      "import": "./src/fonts.js"
+    },
     ".": {
       "types": "./src/vite.d.ts",
       "import": "./src/vite.js"
@@ -49,7 +53,8 @@
     "preact-render-to-string": "^6.5.5",
     "regexparam": "^3.0.0",
     "sirv": "^2.0.4",
-    "trouter": "^4.0.0"
+    "trouter": "^4.0.0",
+    "unifont": "^0.0.2"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.8.2",

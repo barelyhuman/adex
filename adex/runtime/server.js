@@ -27,11 +27,8 @@ async function defaultHandler(req, res) {
   if (serverHandler) {
     return serverHandler(req, res)
   }
-  const templateWithRootAssets = attachRootAssets(template, pageRoute)
-  const templateWithDeps = addDependencyAssets(
-    templateWithRootAssets,
-    pageRoute
-  )
+
+  const templateWithDeps = addDependencyAssets(template, pageRoute)
 
   const finalHTML = templateWithDeps
   res.setHeader('content-type', 'text/html')
@@ -48,14 +45,14 @@ function parseManifest(manifestString) {
   }
 }
 
-function getServerManifest() {
-  const manifestPath = join(__dirname, 'manifest.json')
-  if (existsSync(manifestPath)) {
-    const manifestFile = readFileSync(manifestPath, 'utf8')
-    return parseManifest(manifestFile)
-  }
-  return {}
-}
+// function getServerManifest() {
+//   const manifestPath = join(__dirname, 'manifest.json')
+//   if (existsSync(manifestPath)) {
+//     const manifestFile = readFileSync(manifestPath, 'utf8')
+//     return parseManifest(manifestFile)
+//   }
+//   return {}
+// }
 
 function getClientManifest() {
   const manifestPath = join(__dirname, '../client/manifest.json')
@@ -76,60 +73,44 @@ function addDependencyAssets(template, pageRoute) {
   const filePath = pageRoute.startsWith('/') ? pageRoute.slice(1) : pageRoute
   if (manifest[filePath]) {
     const graph = manifest[filePath]
-    links = (graph.css || []).map(
-      d =>
-        `<link rel="stylesheet" href="/${d.replace(/^(\/?assets\/?)/, 'client/assets/')}" >`
+    links = links.concat(
+      (graph.css || []).map(
+        d =>
+          `<link
+            rel="stylesheet"
+            href="/${d}"
+          />`
+      )
     )
-    scripts = (graph.imports || [])
-      .filter(d => d !== 'virtual:adex:client')
-      .map(d => {
-        const modulePath = manifest[d]
-        return `<script type="module" src="/${modulePath.file.replace(/^(\/?assets\/?)/, 'client/assets/')}" ></script>`
-      })
+
+    const depsHasCSS = manifest[filePath].imports
+      .map(d => manifest[d])
+      .filter(d => d.css?.length)
+
+    if (depsHasCSS.length) {
+      links = links.concat(
+        depsHasCSS.map(d =>
+          d.css
+            .map(
+              p =>
+                `<link
+          rel="stylesheet"
+          href="/${p}"
+        />`
+            )
+            .join('\n')
+        )
+      )
+    }
+
+    scripts = scripts.concat(
+      `<script src="${manifest[filePath].file}" type="module"></script>`
+    )
   }
   return template.replace(
     '</head>',
     links.join('\n') + scripts.join('\n') + '</head>'
   )
-}
-
-function attachRootAssets(template) {
-  const serverManifest = getServerManifest()
-  const clientManifest = getClientManifest()
-  let _newTemplate = template
-  if (Object.keys(serverManifest).length) {
-    const graph = serverManifest['virtual:adex:server']
-    if (graph) {
-      const links = (graph.css || []).map(
-        d =>
-          `<link rel="stylesheet" href="/${d.replace(/^(\/?assets\/?)/, '')}">`
-      )
-      _newTemplate = _newTemplate.replace(
-        '</head>',
-        links.join('\n') + '</head>'
-      )
-    }
-  }
-  if (Object.keys(clientManifest).length) {
-    const graph = clientManifest['virtual:adex:client']
-    if (graph) {
-      const links = (graph.css || []).map(
-        d =>
-          `<link rel="stylesheet" href="/${d.replace(/^(\/?assets\/?)/, 'client/assets/')}">`
-      )
-      _newTemplate = _newTemplate
-        .replace('</head>', links.join('\n') + '</head>')
-        .replace(
-          '</body>',
-          `
-        <script type="module" src="/${graph.file}"></script>
-        </body>
-        `
-        )
-    }
-  }
-
-  return _newTemplate
 }
 
 http

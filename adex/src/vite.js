@@ -79,18 +79,32 @@ function createVirtualModule(id, content) {
  * @returns {import("vite").Plugin}
  */
 function adexClientBuilder() {
+  let options
   return {
     name: 'adex-client',
     enforce: 'post',
+    configResolved(config) {
+      options = config
+    },
     closeBundle() {
       process.nextTick(async () => {
+        const usablePlugins = options.plugins
+          .filter(d => !d.name.startsWith('vite:'))
+          .filter(d => !d.name.startsWith('adex-') || d.name === 'adex-fonts')
         await build({
           configFile: false,
           appType: 'custom',
+          base: '/client',
           plugins: [
+            ...usablePlugins,
             createVirtualModule(
               'virtual:adex:client',
               readFileSync(join(__dirname, '../runtime/client.js'), 'utf8')
+            ),
+            createUserDefaultVirtualModule(
+              'virtual:adex:index.html',
+              '',
+              'src/index.html'
             ),
             createUserDefaultVirtualModule(
               'virtual:adex:global.css',
@@ -125,7 +139,6 @@ function adexClientBuilder() {
  */
 function adexServerBuilder() {
   let input = 'src/entry-server.js'
-  let options
   return {
     name: `adex-server`,
     enforce: 'pre',
@@ -155,9 +168,6 @@ function adexServerBuilder() {
           },
         },
       }
-    },
-    configResolved(config) {
-      options = config
     },
     configureServer(server) {
       return () => {
