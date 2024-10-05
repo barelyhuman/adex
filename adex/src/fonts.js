@@ -21,8 +21,8 @@ export function fonts({ providers = [], families = [] } = {}) {
         const fontsToResolve = families.map(userFamily => {
           return unifont
             .resolveFontFace(userFamily.name, {
-              weights: userFamily.weights,
-              styles: userFamily.styles,
+              weights: userFamily.weights ?? ['600'],
+              styles: userFamily.styles ?? ['normal'],
               subsets: [],
             })
             .then(resolvedFont => {
