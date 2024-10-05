@@ -8,11 +8,10 @@ import { fonts as addFontsPlugin } from './fonts.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /**
- *
- * @param {import("./vite").AdexOptions} options
+ * @param {import("./vite").AdexOptions} [options]
  * @returns
  */
-export function adex({ fonts }) {
+export function adex({ fonts } = {}) {
   return [
     createUserDefaultVirtualModule(
       'virtual:adex:global.css',
