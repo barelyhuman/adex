@@ -3,7 +3,7 @@ import { readFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { build } from 'vite'
-import { fonts as enableFonts } from './fonts.js'
+import { fonts as addFontsPlugin } from './fonts.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -13,8 +13,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
  * @returns
  */
 export function adex({ fonts }) {
-  enableFonts(fonts)
-
   return [
     createUserDefaultVirtualModule(
       'virtual:adex:global.css',
@@ -33,9 +31,30 @@ export function adex({ fonts }) {
       'virtual:adex:client',
       readFileSync(join(__dirname, '../runtime/client.js'), 'utf8')
     ),
+    fonts && Object.keys(fonts).length > 0 && addFontsPlugin(fonts),
     adexServerBuilder(),
     adexClientBuilder(),
   ]
+}
+
+/**
+ * @returns {import("vite").Plugin}
+ */
+export function createVirtualModule(id, content) {
+  return {
+    name: `adex-virtual-${id}`,
+    enforce: 'pre',
+    resolveId(requestId) {
+      if (requestId === id || requestId === '/' + id) {
+        return `\0${id}`
+      }
+    },
+    load(requestId) {
+      if (requestId === `\0${id}`) {
+        return content
+      }
+    },
+  }
 }
 
 /**
@@ -53,26 +72,6 @@ function createUserDefaultVirtualModule(id, content, userPath) {
       ) {
         const userPathResolved = await this.resolve(userPath)
         return userPathResolved ?? `\0${id}`
-      }
-    },
-    load(requestId) {
-      if (requestId === `\0${id}`) {
-        return content
-      }
-    },
-  }
-}
-
-/**
- * @returns {import("vite").Plugin}
- */
-function createVirtualModule(id, content) {
-  return {
-    name: `adex-virtual-${id}`,
-    enforce: 'pre',
-    resolveId(requestId) {
-      if (requestId === id || requestId === '/' + id) {
-        return `\0${id}`
       }
     },
     load(requestId) {

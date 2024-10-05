@@ -1,45 +1,61 @@
 import { createUnifont } from 'unifont'
-import { beforePageRender } from 'adex/hook'
 export { providers } from 'unifont'
 
+const fontVirtualId = 'virtual:adex:font.css'
+
+/**
+ * @returns  {import("vite").Plugin}
+ */
 export function fonts({ providers = [], families = [] } = {}) {
-  beforePageRender(async function (page) {
-    const unifont = await createUnifont([...providers])
-    const fontsToResolve = families.map(userFamily => {
-      return unifont
-        .resolveFontFace(userFamily.name, {
-          weights: userFamily.weights,
-          styles: userFamily.styles,
-          subsets: [],
-        })
-        .then(resolvedFont => {
-          const toUse = resolvedFont.fonts.filter(
-            d =>
-              []
-                .concat(d.weight)
-                .map(String)
-                .find(d => userFamily.weights.includes(d)) ?? false
-          )
+  return {
+    name: 'adex-fonts',
+    enforce: 'pre',
+    resolveId(requestId) {
+      if (requestId === fontVirtualId || requestId === '/' + fontVirtualId) {
+        return `\0${fontVirtualId}`
+      }
+    },
+    async load(id) {
+      if (id === `\0${fontVirtualId}`) {
+        const unifont = await createUnifont([...providers])
+        const fontsToResolve = families.map(userFamily => {
+          return unifont
+            .resolveFontFace(userFamily.name, {
+              weights: userFamily.weights,
+              styles: userFamily.styles,
+              subsets: [],
+            })
+            .then(resolvedFont => {
+              const toUse = resolvedFont.fonts.filter(
+                d =>
+                  []
+                    .concat(d.weight)
+                    .map(String)
+                    .find(d => userFamily.weights.includes(d)) ?? false
+              )
 
-          return { fonts: toUse, name: userFamily.name }
+              return { fonts: toUse, name: userFamily.name }
+            })
         })
-    })
-    const fontImports = []
-    for await (let resolvedFont of fontsToResolve) {
-      const fontFace = fontsToFontFace(resolvedFont)
-      fontImports.push(fontFace.join('\n'))
-    }
-
-    page.html = page.html.replace(
-      '</head>',
-      `
-      <style type="text/css">
-          ${fontImports.join('\n')}
-      </style>
-      </head>
-    `
-    )
-  })
+        const fontImports = []
+        for await (let resolvedFont of fontsToResolve) {
+          const fontFace = fontsToFontFace(resolvedFont)
+          fontImports.push(fontFace.join('\n'))
+        }
+        return {
+          code: fontImports.join('\n'),
+        }
+      }
+    },
+    async transform(code, id) {
+      const resolvedData = await this.resolve('virtual:adex:client')
+      if (id === resolvedData.id) {
+        return {
+          code: `import "${fontVirtualId}";\n` + code,
+        }
+      }
+    },
+  }
 }
 
 function fontsToFontFace(resolvedFont) {
