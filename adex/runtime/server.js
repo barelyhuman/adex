@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import http from 'node:http'
+import { createRequestListener } from 'adex/server'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -22,18 +23,26 @@ const clientAssets = sirv(join(__dirname, '../client'), {
   onNoMatch: defaultHandler,
 })
 
-async function defaultHandler(req, res) {
-  const { html: template, pageRoute, serverHandler } = await handler(req, res)
+/**
+ *
+ * @param {Request} request
+ * @returns
+ */
+async function defaultHandler(request) {
+  const { html: template, pageRoute, serverHandler } = await handler(request)
+
   if (serverHandler) {
-    return serverHandler(req, res)
+    return serverHandler(request)
   }
 
   const templateWithDeps = addDependencyAssets(template, pageRoute)
 
   const finalHTML = templateWithDeps
-  res.setHeader('content-type', 'text/html')
-  res.write(finalHTML)
-  res.end()
+  return new Response(finalHTML, {
+    headers: {
+      'content-type': 'text/html',
+    },
+  })
 }
 
 function parseManifest(manifestString) {
@@ -113,13 +122,15 @@ function addDependencyAssets(template, pageRoute) {
   )
 }
 
+const fetchHandler = createRequestListener(defaultHandler)
+
 http
   .createServer((req, res) => {
     const originalUrl = req.url
     req.url = req.url.replace(/(\/?client\/?)/, '/')
-    return clientAssets(req, res, () => {
+    return clientAssets(req, res, async () => {
       req.url = originalUrl
-      defaultHandler(req, res)
+      fetchHandler(req, res)
     })
   })
   .listen(PORT, HOST, () => {

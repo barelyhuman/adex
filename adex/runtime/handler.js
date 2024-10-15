@@ -7,14 +7,14 @@ const pageRoutes = import.meta.glob('/src/pages/**/*.{tsx,jsx,js}')
 
 const html = String.raw
 
-export async function handler(req, res) {
-  res.statusCode = 200
-
-  prepareRequest(req)
-  prepareResponse(res)
-
+/**
+ *
+ * @param {Request} req
+ * @returns
+ */
+export async function handler(req) {
   const { pageRouteMap, apiRouteMap } = await getRouterMaps()
-  const baseURL = req.url
+  const baseURL = new URL(req.url).pathname
 
   const matchedInPages = Object.keys(pageRouteMap).find(d => {
     return pageRouteMap[d].regex.pattern.test(baseURL)
@@ -25,7 +25,6 @@ export async function handler(req, res) {
   })
 
   const { metas, links, title, lang } = toStatic()
-
   if (pageRouteMap[matchedInPages]) {
     const module = await pageRouteMap[matchedInPages].module()
     const render = 'default' in module ? module.default : module
@@ -54,6 +53,7 @@ export async function handler(req, res) {
   } else if (apiRouteMap[matchedInAPI]) {
     const module = await apiRouteMap[matchedInAPI].module()
     const routeParams = getRouteParams(baseURL, apiRouteMap, matchedInAPI)
+    // @ts-expect-error universal context definition for route params
     req.params = routeParams
     const modifiableContext = {
       req: req,
@@ -61,7 +61,9 @@ export async function handler(req, res) {
     await emitToHooked(CONSTANTS.apiCall, modifiableContext)
     return {
       serverHandler:
-        'default' in module ? module.default : (_, res) => res.end(),
+        'default' in module
+          ? module.default
+          : _ => new Response('', { status: 404 }),
     }
   }
 

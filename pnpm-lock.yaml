@@ -26,6 +26,9 @@ importers:
 
   adex:
     dependencies:
+      '@mjackson/node-fetch-server':
+        specifier: ^0.1.0
+        version: 0.1.0
       bumpp:
         specifier: ^9.4.1
         version: 9.4.1
@@ -494,6 +497,9 @@ packages:
   '@lerna-lite/version@3.7.1':
     resolution: {integrity: sha512-C4CycUp4rgdTGtWYGoa+Ci8EZUsO7b0sAl8Vsdwzjk3g2FRD8d62tpD5Q6drthUQrWRKWpg62rY3q+H+7CGSPg==}
     engines: {node: ^18.0.0 || >=20.0.0}
+
+  '@mjackson/node-fetch-server@0.1.0':
+    resolution: {integrity: sha512-uFkH4CXsX5dU2sh5Ib9gP2bV4t2OYQph6y7s0kSSDlQ0XnIUXwjBZktXClzQV9BivynXWishvXK3ziItpHRcpw==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -3155,6 +3161,8 @@ snapshots:
       - bluebird
       - supports-color
       - typescript
+
+  '@mjackson/node-fetch-server@0.1.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:

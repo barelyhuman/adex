@@ -1,5 +1,12 @@
-export default (req, res) => {
-  return res.json({
-    pong: true,
-  })
+export default req => {
+  return new Response(
+    {
+      pong: true,
+    },
+    {
+      headers: {
+        'content-type': 'application/json',
+      },
+    }
+  )
 }

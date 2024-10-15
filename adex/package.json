@@ -34,6 +34,10 @@
       "types": "./src/fonts.d.ts",
       "import": "./src/fonts.js"
     },
+    "./server": {
+      "types": "./src/server.d.ts",
+      "import": "./src/server.js"
+    },
     ".": {
       "types": "./src/vite.d.ts",
       "import": "./src/vite.js"
@@ -47,6 +51,7 @@
     "next": "bumpp"
   },
   "dependencies": {
+    "@mjackson/node-fetch-server": "^0.1.0",
     "bumpp": "^9.4.1",
     "hoofd": "^1.7.1",
     "mri": "^1.2.0",

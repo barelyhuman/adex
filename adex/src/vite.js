@@ -4,11 +4,12 @@ import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { build } from 'vite'
 import { fonts as addFontsPlugin } from './fonts.js'
+import { createRequestListener } from './server.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /**
- * @param {import("./vite").AdexOptions} [options]
+ * @param {import("./vite.js").AdexOptions} [options]
  * @returns
  */
 export function adex({ fonts } = {}) {
@@ -183,21 +184,25 @@ function adexServerBuilder() {
             return next()
           }
           try {
-            const { html, serverHandler } = await module.handler(req, res)
-            if (serverHandler) {
-              return serverHandler(req, res)
-            }
-            let withScripts = html.replace(
-              '</body>',
-              `<script type='module' src="/virtual:adex:client"></script></body>`
-            )
-            const finalHTML = await server.transformIndexHtml(
-              req.url,
-              withScripts
-            )
-            res.setHeader('content-type', 'text/html')
-            res.write(finalHTML)
-            return res.end()
+            createRequestListener(async req => {
+              const { html, serverHandler } = await module.handler(req)
+              if (serverHandler) {
+                return serverHandler(req)
+              }
+              let withScripts = html.replace(
+                '</body>',
+                `<script type='module' src="/virtual:adex:client"></script></body>`
+              )
+              const finalHTML = await server.transformIndexHtml(
+                req.url,
+                withScripts
+              )
+              return new Response(finalHTML, {
+                headers: {
+                  'content-type': 'text/html',
+                },
+              })
+            })(req, res)
           } catch (err) {
             server.ssrFixStacktrace(err)
             next(err)
