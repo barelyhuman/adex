@@ -4,7 +4,7 @@
   "description": "An easier way to build apps with Vite and Preact",
   "keywords": [
     "adex",
-    "meta-framework",
+    "node-framework",
     "preact",
     "minimal",
     "server",
@@ -37,6 +37,10 @@
     "./server": {
       "types": "./src/server.d.ts",
       "import": "./src/server.js"
+    },
+    "./http": {
+      "types": "./src/http.d.ts",
+      "import": "./src/http.js"
     },
     ".": {
       "types": "./src/vite.d.ts",
