@@ -30,6 +30,10 @@
       "types": "./src/hook.d.ts",
       "import": "./src/hook.js"
     },
+    "./http": {
+      "types": "./src/http.d.ts",
+      "import": "./src/http.js"
+    },
     "./fonts": {
       "types": "./src/fonts.d.ts",
       "import": "./src/fonts.js"
