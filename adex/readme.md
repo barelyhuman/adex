@@ -6,7 +6,7 @@
 - [adex](#adex)
   - [About](#about)
     - [Highlights](#highlights)
-  - [Usage](#usage)
+  - [Setup](#setup)
   - [Docs](#docs)
   - [License](#license)
 
@@ -21,7 +21,7 @@ to build server rendered preact apps.
 - Tiny and Simple
 - Builds on existing tooling instead of adding yet another way to do things
 
-## Usage
+## Setup
 
 As there are a few steps needed to get it running, it's not recommended to do
 this manually, instead use the
@@ -52,7 +52,7 @@ import preact from '@preact/preset-vite'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-+    adex(),
++   adex(),
     preact()],
 })
 ```
@@ -69,7 +69,11 @@ And you are done.
 
 ## Docs
 
-TBD
+> TBD
+
+- Basic
+- Font
+- Islands
 
 > [!NOTE]
 >
