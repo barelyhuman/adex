@@ -54,6 +54,9 @@ importers:
         specifier: ^0.0.2
         version: 0.0.2
     devDependencies:
+      '@dumbjs/preland':
+        specifier: ^0.0.1
+        version: 0.0.1(astring@1.9.0)
       '@preact/preset-vite':
         specifier: ^2.8.2
         version: 2.9.1(@babel/core@7.24.7)(preact@10.24.2)(vite@5.4.8(@types/node@20.16.10)(lightningcss@1.25.1))
@@ -224,8 +227,16 @@ packages:
     resolution: {integrity: sha512-XEFXSlxiG5td2EJRe8vOmRbaXVgfcBlszKujvVmWIK/UpywWljQCfzAv3RQCGujWQ1RD4YYWEAqDXfuJiy8f5Q==}
     engines: {node: '>=6.9.0'}
 
+  '@barelyhuman/astring-jsx@2.0.1':
+    resolution: {integrity: sha512-iWb1iOQrzWX6oXcRRj2NiZu2mhJMQx5MD3440/wxX405fRaOKsyPAxQ2cnsaJTMz9+GIj1rw4oKs1YRNhoihQw==}
+    peerDependencies:
+      astring: ^1.8.6
+
   '@barelyhuman/prettier-config@1.1.0':
     resolution: {integrity: sha512-OlommcxHffkX+BtAsXP1ipK0WzKgNha5a+T+reNlNZZkHPZzZrLpQ23snAbubN4xZiV73Z6E+To02ZZka0eTTQ==}
+
+  '@dumbjs/preland@0.0.1':
+    resolution: {integrity: sha512-wl64MlIIOVRuTEk9u2LDeBKCU19O1Uk70ZACB4LKIIxfj5EQPbvedE/+0np1WoCUf+j41glw1Qw2N8gGSubjeA==}
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -796,6 +807,41 @@ packages:
     resolution: {integrity: sha512-6/mh1E2u2YgEsCHdY0Yx5oW+61gZU+1vXaoiHHrpKeuRNNgFvS+/jrwHiQhB5apAf5oB7UB7E19ol2R2LKH8hQ==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
 
+  acorn-class-fields@1.0.0:
+    resolution: {integrity: sha512-l+1FokF34AeCXGBHkrXFmml9nOIRI+2yBnBpO5MaVAaTIJ96irWLtcCxX+7hAp6USHFCe+iyyBB4ZhxV807wmA==}
+    engines: {node: '>=4.8.2'}
+    peerDependencies:
+      acorn: ^6 || ^7 || ^8
+
+  acorn-import-assertions@1.9.0:
+    resolution: {integrity: sha512-cmMwop9x+8KFhxvKrKfPYmN6/pKTYYHBqLa0DfvVZcKMJWNyWLnaqND7dx/qn66R7ewM1UX5XMaDVP5wlVTaVA==}
+    peerDependencies:
+      acorn: ^8
+
+  acorn-jsx-walk@2.0.0:
+    resolution: {integrity: sha512-uuo6iJj4D4ygkdzd6jPtcxs8vZgDX9YFIkqczGImoypX2fQ4dVImmu3UzA4ynixCIMTrEOWW+95M2HuBaCEOVA==}
+
+  acorn-jsx@5.3.2:
+    resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
+    peerDependencies:
+      acorn: ^6.0.0 || ^7.0.0 || ^8.0.0
+
+  acorn-private-class-elements@1.0.0:
+    resolution: {integrity: sha512-zYNcZtxKgVCg1brS39BEou86mIao1EV7eeREG+6WMwKbuYTeivRRs6S2XdWnboRde6G9wKh2w+WBydEyJsJ6mg==}
+    engines: {node: '>=4.8.2'}
+    peerDependencies:
+      acorn: ^6.1.0 || ^7 || ^8
+
+  acorn-static-class-features@1.0.0:
+    resolution: {integrity: sha512-XZJECjbmMOKvMHiNzbiPXuXpLAJfN3dAKtfIYbk1eHiWdsutlek+gS7ND4B8yJ3oqvHo1NxfafnezVmq7NXK0A==}
+    engines: {node: '>=4.8.2'}
+    peerDependencies:
+      acorn: ^6.1.0 || ^7 || ^8
+
+  acorn-walk@8.3.4:
+    resolution: {integrity: sha512-ueEepnujpqee2o5aIYnvHU6C0A42MNdsIDeqy5BydrkuC5R1ZuUFnm27EeFJGoEHJQgn3uleRvmTXaJgfXbt4g==}
+    engines: {node: '>=0.4.0'}
+
   acorn@8.12.1:
     resolution: {integrity: sha512-tcpGyI9zbizT9JbV6oYE477V6mTlXvvi0T0G3SNIYE2apm/G5huBa1+K89VGeovbg+jycCrfhl3ADxErOuO6Jg==}
     engines: {node: '>=0.4.0'}
@@ -854,6 +900,10 @@ packages:
 
   array-ify@1.0.0:
     resolution: {integrity: sha512-c5AMf34bKdvPhQ7tBGhqkgKNUzMr4WUs+WDtC2ZUGOUncbxKMTvqxYctiseW3+L4bA8ec+GcZ6/A/FW4m8ukng==}
+
+  astring@1.9.0:
+    resolution: {integrity: sha512-LElXdjswlqjWrPpJFg1Fx4wpkOCxj1TDHlSV4PlaRxHGWko024xICaa97ZkMfs6DRKlCguiAI+rbXv5GWwXIkg==}
+    hasBin: true
 
   autoprefixer@10.4.20:
     resolution: {integrity: sha512-XY25y5xSv/wEoqzDyXXME4AFfkZI0P23z6Fs3YgymDnKJkCGOnkL0iTxCa85UTqaSgfcqyf3UA6+c7wUvx/16g==}
@@ -2597,6 +2647,10 @@ packages:
     resolution: {integrity: sha512-S7c5F2mpb5o+9pS1UfO3jcQb0OR25L7ZJT64cv3K0TkGh1VxJb+PNnL8b46KSJ6tmxIbA0xgHnrtBdVGeHmJ0A==}
     engines: {node: '>=18'}
 
+  xtend@4.0.2:
+    resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
+    engines: {node: '>=0.4'}
+
   y18n@5.0.8:
     resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==}
     engines: {node: '>=10'}
@@ -2799,7 +2853,26 @@ snapshots:
       '@babel/helper-validator-identifier': 7.24.7
       to-fast-properties: 2.0.0
 
+  '@barelyhuman/astring-jsx@2.0.1(astring@1.9.0)':
+    dependencies:
+      astring: 1.9.0
+      xtend: 4.0.2
+
   '@barelyhuman/prettier-config@1.1.0': {}
+
+  '@dumbjs/preland@0.0.1(astring@1.9.0)':
+    dependencies:
+      '@barelyhuman/astring-jsx': 2.0.1(astring@1.9.0)
+      acorn: 8.12.1
+      acorn-class-fields: 1.0.0(acorn@8.12.1)
+      acorn-import-assertions: 1.9.0(acorn@8.12.1)
+      acorn-jsx: 5.3.2(acorn@8.12.1)
+      acorn-jsx-walk: 2.0.0
+      acorn-static-class-features: 1.0.0(acorn@8.12.1)
+      acorn-walk: 8.3.4
+      sucrase: 3.35.0
+    transitivePeerDependencies:
+      - astring
 
   '@esbuild/aix-ppc64@0.21.5':
     optional: true
@@ -3523,6 +3596,34 @@ snapshots:
 
   abbrev@2.0.0: {}
 
+  acorn-class-fields@1.0.0(acorn@8.12.1):
+    dependencies:
+      acorn: 8.12.1
+      acorn-private-class-elements: 1.0.0(acorn@8.12.1)
+
+  acorn-import-assertions@1.9.0(acorn@8.12.1):
+    dependencies:
+      acorn: 8.12.1
+
+  acorn-jsx-walk@2.0.0: {}
+
+  acorn-jsx@5.3.2(acorn@8.12.1):
+    dependencies:
+      acorn: 8.12.1
+
+  acorn-private-class-elements@1.0.0(acorn@8.12.1):
+    dependencies:
+      acorn: 8.12.1
+
+  acorn-static-class-features@1.0.0(acorn@8.12.1):
+    dependencies:
+      acorn: 8.12.1
+      acorn-private-class-elements: 1.0.0(acorn@8.12.1)
+
+  acorn-walk@8.3.4:
+    dependencies:
+      acorn: 8.12.1
+
   acorn@8.12.1: {}
 
   add-stream@1.0.0: {}
@@ -3570,6 +3671,8 @@ snapshots:
   argparse@2.0.1: {}
 
   array-ify@1.0.0: {}
+
+  astring@1.9.0: {}
 
   autoprefixer@10.4.20(postcss@8.4.47):
     dependencies:
@@ -5299,6 +5402,8 @@ snapshots:
       sort-keys: 5.0.0
       type-fest: 4.22.0
       write-json-file: 5.0.0
+
+  xtend@4.0.2: {}
 
   y18n@5.0.8: {}
 

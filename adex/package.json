@@ -57,6 +57,7 @@
     "unifont": "^0.0.2"
   },
   "devDependencies": {
+    "@dumbjs/preland": "^0.0.1",
     "@preact/preset-vite": "^2.8.2",
     "@types/node": "^20.14.10",
     "autoprefixer": "^10.4.19",

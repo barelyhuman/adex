@@ -7,6 +7,7 @@ import { providers } from 'adex/fonts'
 export default defineConfig({
   plugins: [
     adex({
+      islands: false,
       fonts: {
         providers: [providers.google()],
         families: [

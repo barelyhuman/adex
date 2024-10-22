@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks'
 import './local-index.css'
+import { Counter } from '../components/counter.tsx'
 
 export default function Page() {
   const [count, setCount] = useState(0)
@@ -28,6 +29,10 @@ export default function Page() {
       </div>
       <p class="read-the-docs">
         Click on the Vite and Preact logos to learn more
+      </p>
+      <p>
+        Here's an island
+        <Counter />
       </p>
     </div>
   )

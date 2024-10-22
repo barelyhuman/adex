@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, link, readFileSync } from 'node:fs'
 import http from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -9,6 +9,8 @@ import { sirv, mri } from 'adex/ssr'
 //@ts-expect-error vite virtual import
 import { handler } from 'virtual:adex:handler'
 
+import 'virtual:adex:global.css'
+
 const flags = mri(process.argv.slice(2))
 
 const PORT = flags.port || process.env.PORT || 3000
@@ -16,11 +18,31 @@ const HOST = flags.host || process.env.HOST || 'localhost'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const clientAssets = sirv(join(__dirname, '../client'), {
+const serverAssets = sirv(join(__dirname, './assets'), {
   maxAge: 31536000,
   immutable: true,
   onNoMatch: defaultHandler,
 })
+
+const islandAssets = sirv(join(__dirname, './islands'), {
+  maxAge: 31536000,
+  immutable: true,
+  onNoMatch: defaultHandler,
+})
+
+let clientWasGenerated = existsSync(join(__dirname, '../client'))
+
+let clientAssets = (req, res, next) => {
+  next()
+}
+
+if (clientWasGenerated) {
+  clientAssets = sirv(join(__dirname, '../client'), {
+    maxAge: 31536000,
+    immutable: true,
+    onNoMatch: defaultHandler,
+  })
+}
 
 async function defaultHandler(req, res) {
   const { html: template, pageRoute, serverHandler } = await handler(req, res)
@@ -45,14 +67,14 @@ function parseManifest(manifestString) {
   }
 }
 
-// function getServerManifest() {
-//   const manifestPath = join(__dirname, 'manifest.json')
-//   if (existsSync(manifestPath)) {
-//     const manifestFile = readFileSync(manifestPath, 'utf8')
-//     return parseManifest(manifestFile)
-//   }
-//   return {}
-// }
+function getServerManifest() {
+  const manifestPath = join(__dirname, 'manifest.json')
+  if (existsSync(manifestPath)) {
+    const manifestFile = readFileSync(manifestPath, 'utf8')
+    return parseManifest(manifestFile)
+  }
+  return {}
+}
 
 function getClientManifest() {
   const manifestPath = join(__dirname, '../client/manifest.json')
@@ -63,14 +85,26 @@ function getClientManifest() {
   return {}
 }
 
-function addDependencyAssets(template, pageRoute) {
-  if (!pageRoute) {
-    return template
-  }
-  const manifest = getClientManifest()
+function manifestToHTML(manifest, filePath) {
   let links = []
   let scripts = []
-  const filePath = pageRoute.startsWith('/') ? pageRoute.slice(1) : pageRoute
+
+  // TODO: move it up the chain
+  const rootServerFile = 'virtual:adex:server'
+  // if root manifest, also add it's css imports in
+  if (manifest[rootServerFile]) {
+    const graph = manifest[rootServerFile]
+    links = links.concat(
+      (graph.css || []).map(
+        d =>
+          `<link
+            rel="stylesheet"
+            href="/${d}"
+          />`
+      )
+    )
+  }
+
   if (manifest[filePath]) {
     const graph = manifest[filePath]
     links = links.concat(
@@ -82,8 +116,7 @@ function addDependencyAssets(template, pageRoute) {
           />`
       )
     )
-
-    const depsHasCSS = manifest[filePath].imports
+    const depsHasCSS = (manifest[filePath].imports || [])
       .map(d => manifest[d])
       .filter(d => d.css?.length)
 
@@ -107,6 +140,32 @@ function addDependencyAssets(template, pageRoute) {
       `<script src="${manifest[filePath].file}" type="module"></script>`
     )
   }
+  return {
+    scripts,
+    links,
+  }
+}
+
+function addDependencyAssets(template, pageRoute) {
+  if (!pageRoute) {
+    return template
+  }
+  const serverManifest = getServerManifest()
+  const manifest = getClientManifest()
+  const filePath = pageRoute.startsWith('/') ? pageRoute.slice(1) : pageRoute
+
+  const { links: serverLinks, scripts: serverScripts } = manifestToHTML(
+    serverManifest,
+    filePath
+  )
+  const { links: clientLinks, scripts: clientScripts } = manifestToHTML(
+    manifest,
+    filePath
+  )
+
+  const links = [...serverLinks, ...clientLinks]
+  const scripts = [...serverScripts, ...clientScripts]
+
   return template.replace(
     '</head>',
     links.join('\n') + scripts.join('\n') + '</head>'
@@ -116,10 +175,16 @@ function addDependencyAssets(template, pageRoute) {
 http
   .createServer((req, res) => {
     const originalUrl = req.url
-    req.url = req.url.replace(/(\/?client\/?)/, '/')
-    return clientAssets(req, res, () => {
-      req.url = originalUrl
-      defaultHandler(req, res)
+    req.url = originalUrl.replace(/(\/?assets\/?)/, '/')
+    serverAssets(req, res, () => {
+      req.url = originalUrl.replace(/(\/?islands\/?)/, '/')
+      return islandAssets(req, res, () => {
+        req.url = originalUrl.replace(/(\/?client\/?)/, '/')
+        return clientAssets(req, res, () => {
+          req.url = originalUrl
+          defaultHandler(req, res)
+        })
+      })
     })
   })
   .listen(PORT, HOST, () => {

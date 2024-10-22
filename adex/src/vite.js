@@ -1,17 +1,32 @@
+import {
+  DEFAULT_TRANSPILED_IDENTIFIERS,
+  IMPORT_PATH_PLACEHOLDER,
+  findIslands,
+  generateClientTemplate,
+  getIslandName,
+  getServerTemplatePlaceholder,
+  injectIslandAST,
+  isFunctionIsland,
+  readSourceFile,
+} from '@dumbjs/preland'
+import { addImportToAST, codeFromAST } from '@dumbjs/preland/ast'
 import preact from '@preact/preset-vite'
-import { readFileSync } from 'fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 import { build } from 'vite'
 import { fonts as addFontsPlugin } from './fonts.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const cwd = process.cwd()
+const islandsDir = join(cwd, '.islands')
+let runningIslandBuild = false
 
 /**
  * @param {import("./vite").AdexOptions} [options]
  * @returns
  */
-export function adex({ fonts } = {}) {
+export function adex({ fonts, islands = false } = {}) {
   return [
     createUserDefaultVirtualModule(
       'virtual:adex:global.css',
@@ -31,8 +46,149 @@ export function adex({ fonts } = {}) {
       readFileSync(join(__dirname, '../runtime/client.js'), 'utf8')
     ),
     fonts && Object.keys(fonts).length > 0 && addFontsPlugin(fonts),
-    adexServerBuilder(),
-    adexClientBuilder(),
+    adexServerBuilder({ islands }),
+    !islands && adexClientBuilder(),
+    islands && adexIslandsBuilder(),
+  ]
+}
+
+/**
+ * @returns {import("vite").Plugin[]}
+ */
+function adexIslandsBuilder() {
+  const clientVirtuals = {}
+  let isBuild = false
+  let outDir
+  const importerById = {}
+  return [
+    {
+      name: 'adex-islands',
+      enforce: 'pre',
+      config(d, e) {
+        outDir = d.build.outDir
+        isBuild = e.command === 'build'
+      },
+      resolveId(id, _importer) {
+        importerById[id] = _importer
+      },
+      transform(code, id) {
+        if (!/\.(js|ts)x$/.test(id)) return
+
+        // if being imported by the client, don't send
+        // back the transformed server code, send the
+        // original component
+        const hasImporter = importerById[id]
+        if (hasImporter) {
+          if (hasImporter.startsWith('\0/virtual:adex:island')) {
+            return
+          }
+        }
+
+        const islands = findIslands(readSourceFile(id), {
+          isFunctionIsland: node =>
+            isFunctionIsland(node, {
+              transpiledIdentifiers:
+                DEFAULT_TRANSPILED_IDENTIFIERS.concat('_jsxDEV'),
+            }),
+        })
+        if (!islands.length) return
+
+        islands.forEach(node => {
+          injectIslandAST(node.ast, node)
+          const clientCode = generateClientTemplate(node.id).replace(
+            IMPORT_PATH_PLACEHOLDER,
+            id
+          )
+
+          mkdirSync(islandsDir, { recursive: true })
+          writeFileSync(
+            join(islandsDir, getIslandName(node.id) + '.js'),
+            clientCode,
+            'utf8'
+          )
+
+          clientVirtuals[node.id] = clientCode
+        })
+
+        const addImport = addImportToAST(islands[0].ast)
+        addImport('h', 'preact', { named: true })
+        addImport('Fragment', 'preact', { named: true })
+
+        let serverTemplateCode = codeFromAST(islands[0].ast)
+        islands.forEach(island => {
+          serverTemplateCode = serverTemplateCode.replace(
+            getServerTemplatePlaceholder(island.id),
+            !isBuild
+              ? `/virtual:adex:island-${island.id}`
+              : `/islands/${getIslandName(island.id) + '.js'}`
+          )
+        })
+
+        return {
+          code: serverTemplateCode,
+        }
+      },
+    },
+    {
+      name: 'adex-island-builds',
+      enforce: 'post',
+      writeBundle: {
+        sequential: true,
+        async handler() {
+          if (Object.keys(clientVirtuals).length === 0) return
+          if (runningIslandBuild) return
+
+          await build({
+            configFile: false,
+            plugins: [preact()],
+            build: {
+              ssr: false,
+              outDir: join(outDir, 'islands'),
+              emptyOutDir: false,
+              rollupOptions: {
+                output: {
+                  format: 'esm',
+                  entryFileNames: '[name].js',
+                },
+                input: Object.fromEntries(
+                  Object.entries(clientVirtuals).map(([k, v]) => {
+                    const key = getIslandName(k)
+                    return [key, join(islandsDir, key + '.js')]
+                  })
+                ),
+              },
+            },
+          })
+        },
+      },
+    },
+    {
+      name: 'adex-island-virtuals',
+      resolveId(id) {
+        if (
+          id.startsWith('virtual:adex:island') ||
+          id.startsWith('/virtual:adex:island')
+        ) {
+          return `\0${id}`
+        }
+      },
+      load(id) {
+        if (
+          (id.startsWith('\0') && id.startsWith('\0virtual:adex:island')) ||
+          id.startsWith('\0/virtual:adex:island')
+        ) {
+          const compName = id
+            .replace('\0', '')
+            .replace(/\/?(virtual\:adex\:island\-)/, '')
+
+          if (clientVirtuals[compName]) {
+            return {
+              code: clientVirtuals[compName],
+            }
+          }
+        }
+      },
+    },
   ]
 }
 
@@ -117,7 +273,7 @@ function adexClientBuilder() {
               '',
               'src/global.css'
             ),
-            preact(),
+            preact({ prefreshEnabled: false }),
           ],
           build: {
             outDir: 'dist/client',
@@ -143,7 +299,7 @@ function adexClientBuilder() {
 /**
  * @returns {import("vite").Plugin}
  */
-function adexServerBuilder() {
+function adexServerBuilder({ islands = false } = {}) {
   let input = 'src/entry-server.js'
   return {
     name: `adex-server`,
@@ -187,16 +343,27 @@ function adexServerBuilder() {
             if (serverHandler) {
               return serverHandler(req, res)
             }
-            let withScripts = html.replace(
-              '</body>',
-              `<script type='module' src="/virtual:adex:client"></script></body>`
+            let renderedHTML = html.replace(
+              '</head>',
+              `
+              <script type="module">
+                import "virtual:adex:global.css"
+              </script>
+              </head>
+            `
             )
-            const finalHTML = await server.transformIndexHtml(
+            if (!islands) {
+              renderedHTML = html.replace(
+                '</body>',
+                `<script type='module' src="/virtual:adex:client"></script></body>`
+              )
+            }
+            const finalRenderedHTML = await server.transformIndexHtml(
               req.url,
-              withScripts
+              renderedHTML
             )
             res.setHeader('content-type', 'text/html')
-            res.write(finalHTML)
+            res.write(finalRenderedHTML)
             return res.end()
           } catch (err) {
             server.ssrFixStacktrace(err)
