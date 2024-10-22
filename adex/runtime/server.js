@@ -24,11 +24,19 @@ const serverAssets = sirv(join(__dirname, './assets'), {
   onNoMatch: defaultHandler,
 })
 
-const islandAssets = sirv(join(__dirname, './islands'), {
-  maxAge: 31536000,
-  immutable: true,
-  onNoMatch: defaultHandler,
-})
+let islandsWereGenerated = existsSync(join(__dirname, './islands'))
+
+let islandAssets = (req, res, next) => {
+  next()
+}
+
+if (islandsWereGenerated) {
+  islandAssets = sirv(join(__dirname, './islands'), {
+    maxAge: 31536000,
+    immutable: true,
+    onNoMatch: defaultHandler,
+  })
+}
 
 let clientWasGenerated = existsSync(join(__dirname, '../client'))
 
