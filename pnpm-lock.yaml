@@ -29,6 +29,9 @@ importers:
       bumpp:
         specifier: ^9.4.1
         version: 9.4.1
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
       hoofd:
         specifier: ^1.7.1
         version: 1.7.1(react@18.3.1)

@@ -34,6 +34,10 @@
       "types": "./src/http.d.ts",
       "import": "./src/http.js"
     },
+    "./env": {
+      "types": "./src/env.d.ts",
+      "import": "./src/env.js"
+    },
     "./fonts": {
       "types": "./src/fonts.d.ts",
       "import": "./src/fonts.js"
@@ -52,6 +56,7 @@
   },
   "dependencies": {
     "bumpp": "^9.4.1",
+    "dotenv": "^16.4.5",
     "hoofd": "^1.7.1",
     "mri": "^1.2.0",
     "preact-render-to-string": "^6.5.5",
