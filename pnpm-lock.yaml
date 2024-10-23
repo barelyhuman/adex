@@ -29,6 +29,9 @@ importers:
 
   adex:
     dependencies:
+      '@dumbjs/preland':
+        specifier: ^0.0.2
+        version: 0.0.2(astring@1.9.0)
       bumpp:
         specifier: ^9.4.1
         version: 9.4.1
@@ -60,9 +63,6 @@ importers:
         specifier: ^0.0.2
         version: 0.0.2
     devDependencies:
-      '@dumbjs/preland':
-        specifier: ^0.0.2
-        version: 0.0.2(astring@1.9.0)
       '@preact/preset-vite':
         specifier: ^2.8.2
         version: 2.9.1(@babel/core@7.24.7)(preact@10.24.2)(vite@5.4.8(@types/node@20.16.10)(lightningcss@1.25.1))
