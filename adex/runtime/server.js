@@ -1,5 +1,6 @@
 import { existsSync, link, readFileSync } from 'node:fs'
 import http from 'node:http'
+import { env } from 'adex/env'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -13,8 +14,8 @@ import 'virtual:adex:global.css'
 
 const flags = mri(process.argv.slice(2))
 
-const PORT = flags.port || process.env.PORT || 3000
-const HOST = flags.host || process.env.HOST || 'localhost'
+const PORT = flags.port || parseInt(env.get('PORT', '3000'), 10)
+const HOST = flags.host || env.get('HOST', 'localhost')
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
