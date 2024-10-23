@@ -17,15 +17,36 @@ export async function handler(req, res) {
   const { pageRouteMap, apiRouteMap } = await getRouterMaps()
   const baseURL = req.url
 
+  const { metas, links, title, lang } = toStatic()
+
+  if (baseURL.startsWith('/api') || baseURL.startsWith('api')) {
+    const matchedInAPI = Object.keys(apiRouteMap).find(d => {
+      return apiRouteMap[d].regex.pattern.test(baseURL)
+    })
+    if (apiRouteMap[matchedInAPI]) {
+      const module = await apiRouteMap[matchedInAPI].module()
+      const routeParams = getRouteParams(baseURL, apiRouteMap, matchedInAPI)
+      req.params = routeParams
+      const modifiableContext = {
+        req: req,
+      }
+      await emitToHooked(CONSTANTS.apiCall, modifiableContext)
+      return {
+        serverHandler:
+          'default' in module ? module.default : (_, res) => res.end(),
+      }
+    }
+    return {
+      serverHandler: (_, res) => {
+        res.statusCode = 404
+        res.end('Not found')
+      },
+    }
+  }
+
   const matchedInPages = Object.keys(pageRouteMap).find(d => {
     return pageRouteMap[d].regex.pattern.test(baseURL)
   })
-
-  const matchedInAPI = Object.keys(apiRouteMap).find(d => {
-    return apiRouteMap[d].regex.pattern.test(baseURL)
-  })
-
-  const { metas, links, title, lang } = toStatic()
 
   if (pageRouteMap[matchedInPages]) {
     const module = await pageRouteMap[matchedInPages].module()
@@ -51,18 +72,6 @@ export async function handler(req, res) {
     return {
       html: modifiableContext.html,
       pageRoute: pageRouteMap[matchedInPages].route,
-    }
-  } else if (apiRouteMap[matchedInAPI]) {
-    const module = await apiRouteMap[matchedInAPI].module()
-    const routeParams = getRouteParams(baseURL, apiRouteMap, matchedInAPI)
-    req.params = routeParams
-    const modifiableContext = {
-      req: req,
-    }
-    await emitToHooked(CONSTANTS.apiCall, modifiableContext)
-    return {
-      serverHandler:
-        'default' in module ? module.default : (_, res) => res.end(),
     }
   }
 
