@@ -1,6 +1,6 @@
 {
   "name": "adex",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "An easier way to build apps with Vite and Preact",
   "keywords": [
     "adex",
