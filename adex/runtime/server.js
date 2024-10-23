@@ -1,11 +1,11 @@
-import { existsSync, link, readFileSync } from 'node:fs'
-import http from 'node:http'
 import { env } from 'adex/env'
+import { existsSync, readFileSync } from 'node:fs'
+import http from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 //@ts-expect-error internal requires
-import { sirv, mri } from 'adex/ssr'
+import { mri, sirv } from 'adex/ssr'
 
 //@ts-expect-error vite virtual import
 import { handler } from 'virtual:adex:handler'
