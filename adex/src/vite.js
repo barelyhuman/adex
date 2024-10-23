@@ -61,7 +61,6 @@ function adexIslandsBuilder() {
   const clientVirtuals = {}
   let isBuild = false
   let outDir
-  const importerById = {}
   return [
     {
       name: 'adex-islands',
@@ -70,21 +69,13 @@ function adexIslandsBuilder() {
         outDir = d.build.outDir
         isBuild = e.command === 'build'
       },
-      resolveId(id, _importer) {
-        importerById[id] = _importer
-      },
-      transform(code, id) {
+      transform(code, id, viteEnv) {
         if (!/\.(js|ts)x$/.test(id)) return
 
         // if being imported by the client, don't send
         // back the transformed server code, send the
         // original component
-        const hasImporter = importerById[id]
-        if (hasImporter) {
-          if (hasImporter.startsWith('\0/virtual:adex:island')) {
-            return
-          }
-        }
+        if (!viteEnv.ssr) return
 
         const islands = findIslands(readSourceFile(id), {
           isFunctionIsland: node =>
