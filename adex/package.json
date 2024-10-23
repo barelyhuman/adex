@@ -1,6 +1,6 @@
 {
   "name": "adex",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "An easier way to build apps with Vite and Preact",
   "keywords": [
     "adex",
@@ -55,6 +55,7 @@
     "next": "bumpp"
   },
   "dependencies": {
+    "@dumbjs/preland": "^0.0.2",
     "bumpp": "^9.4.1",
     "dotenv": "^16.4.5",
     "hoofd": "^1.7.1",
@@ -63,8 +64,7 @@
     "regexparam": "^3.0.0",
     "sirv": "^2.0.4",
     "trouter": "^4.0.0",
-    "unifont": "^0.0.2",
-    "@dumbjs/preland": "^0.0.2"
+    "unifont": "^0.0.2"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.8.2",
