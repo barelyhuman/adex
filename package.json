@@ -20,5 +20,8 @@
     "@lerna-lite/publish": "^3.7.1",
     "@lerna-lite/version": "^3.7.1",
     "prettier": "^3.3.2"
+  },
+  "resolutions": {
+    "micromatch": ">=4.0.8"
   }
 }
