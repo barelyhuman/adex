@@ -21,7 +21,7 @@ export default function Page() {
           classs="bg-black text-white"
           onClick={() => setCount(count => count + 1)}
         >
-          count is {count}
+          count is {count} (only works when `islands` is set to `false`)
         </button>
         <p>
           Edit <code>src/app.jsx</code> and save to test HMR
@@ -31,8 +31,10 @@ export default function Page() {
         Click on the Vite and Preact logos to learn more
       </p>
       <p>
-        Here's an island
-        <Counter />
+        Here's an island{' '}
+        <span>
+          <Counter />
+        </span>
       </p>
     </div>
   )
