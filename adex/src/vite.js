@@ -12,6 +12,7 @@ import {
 import { addImportToAST, codeFromAST } from '@dumbjs/preland/ast'
 import preact from '@preact/preset-vite'
 import { mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { readFile } from 'fs/promises'
 import { dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { build } from 'vite'
@@ -28,6 +29,15 @@ let runningIslandBuild = false
  */
 export function adex({ fonts, islands = false } = {}) {
   return [
+    preactPages({
+      root: '/src/pages',
+      id: '~routes',
+    }),
+    preactPages({
+      root: '/src/api',
+      id: '~apiRoutes',
+      replacer: '/api',
+    }),
     createUserDefaultVirtualModule(
       'virtual:adex:global.css',
       '',
@@ -332,6 +342,7 @@ function adexServerBuilder({ islands = false } = {}) {
     },
     async resolveId(id, importer, meta) {
       if (id.endsWith('.css')) {
+        if (!importer) return
         const importerFromRoot = importer.replace(resolve(cfg.root), '')
         const resolvedCss = await this.resolve(id, importer, meta)
         devCSSMap.set(
@@ -437,4 +448,42 @@ function adexGuards() {
       },
     },
   ]
+}
+
+/**
+ * @returns {import("vite").Plugin}
+ */
+function preactPages({
+  root = '/src/pages',
+  id: virtualId = '~routes',
+  extensions = ['js', 'ts', 'tsx', 'jsx'],
+  replacer = '',
+} = {}) {
+  return {
+    name: 'routes',
+    enforce: 'pre',
+    resolveId(id) {
+      if (id !== virtualId) {
+        return
+      }
+      return `/0${virtualId}`
+    },
+    async load(id) {
+      if (id !== `/0${virtualId}`) {
+        return
+      }
+
+      const extsString = extensions.join(',')
+      const code = (
+        await readFile(join(__dirname, '../runtime/pages.js'), 'utf8')
+      )
+        .replaceAll('#{__PLUGIN_PAGES_ROOT}', root + `/**/*.{${extsString}}`)
+        .replaceAll('#{__PLUGIN_PAGES_ROOT_REGEX}', `^${root}`)
+        .replaceAll('#{__PLUGIN_PAGES_ROOT_REGEX_REPLACER}', replacer)
+
+      return {
+        code,
+      }
+    },
+  }
 }
