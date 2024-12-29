@@ -60,10 +60,6 @@ export function normalizeRouteImports(imports, baseKeyMatcher) {
         module: imports[route],
       }
     })
-    .reduce((acc, item) => {
-      acc[item.routePath] = item
-      return acc
-    }, {})
 }
 
 function simplifyPath(path) {

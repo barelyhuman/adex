@@ -14,18 +14,18 @@ export async function handler(req, res) {
   prepareRequest(req)
   prepareResponse(res)
 
-  const { pageRouteMap, apiRouteMap } = await getRouterMaps()
+  const { pageRoutes, apiRoutes } = await getRouterMaps()
   const baseURL = req.url
 
   const { metas, links, title, lang } = toStatic()
 
   if (baseURL.startsWith('/api') || baseURL.startsWith('api')) {
-    const matchedInAPI = Object.keys(apiRouteMap).find(d => {
-      return apiRouteMap[d].regex.pattern.test(baseURL)
+    const matchedInAPI = apiRoutes.find(d => {
+      return d.regex.pattern.test(baseURL)
     })
-    if (apiRouteMap[matchedInAPI]) {
-      const module = await apiRouteMap[matchedInAPI].module()
-      const routeParams = getRouteParams(baseURL, apiRouteMap, matchedInAPI)
+    if (matchedInAPI) {
+      const module = await matchedInAPI.module()
+      const routeParams = getRouteParams(baseURL, matchedInAPI)
       req.params = routeParams
       const modifiableContext = {
         req: req,
@@ -44,21 +44,21 @@ export async function handler(req, res) {
     }
   }
 
-  const matchedInPages = Object.keys(pageRouteMap).find(d => {
-    return pageRouteMap[d].regex.pattern.test(baseURL)
+  const matchedInPages = pageRoutes.find(d => {
+    return d.regex.pattern.test(baseURL)
   })
 
-  if (pageRouteMap[matchedInPages]) {
-    const module = await pageRouteMap[matchedInPages].module()
+  if (matchedInPages) {
+    const module = await matchedInPages.module()
     const render = 'default' in module ? module.default : module
-    const routeParams = getRouteParams(baseURL, pageRouteMap, matchedInPages)
+    const routeParams = getRouteParams(baseURL, matchedInPages)
 
     const htmlString = HTMLTemplate({
       metas,
       links,
       title,
       lang,
-      entryPage: pageRouteMap[matchedInPages].route,
+      entryPage: matchedInPages.route,
       routeParams: Buffer.from(JSON.stringify(routeParams), 'utf8').toString(
         'base64'
       ),
@@ -71,7 +71,7 @@ export async function handler(req, res) {
     await emitToHooked(CONSTANTS.pageRender, modifiableContext)
     return {
       html: modifiableContext.html,
-      pageRoute: pageRouteMap[matchedInPages].route,
+      pageRoute: matchedInPages.route,
     }
   }
 
@@ -126,19 +126,19 @@ async function getRouterMaps() {
     '',
   ])
   return {
-    pageRouteMap,
-    apiRouteMap,
+    pageRoutes: pageRouteMap,
+    apiRoutes: apiRouteMap,
   }
 }
 
-function getRouteParams(baseURL, routeMap, routeMapKey) {
-  const matchedParams = baseURL.match(routeMap[routeMapKey].regex.pattern)
-  const routeParams = regexToParams(routeMap, routeMapKey, matchedParams)
+function getRouteParams(baseURL, matchedRoute) {
+  const matchedParams = baseURL.match(matchedRoute.regex.pattern)
+  const routeParams = regexToParams(matchedRoute, matchedParams)
   return routeParams
 }
 
-function regexToParams(routeMap, routeMapKey, regexMatchGroup) {
-  return routeMap[routeMapKey].regex.keys.reduce((acc, key, index) => {
+function regexToParams(matchedRoute, regexMatchGroup) {
+  return matchedRoute.regex.keys.reduce((acc, key, index) => {
     acc[key] = regexMatchGroup[index + 1]
     return acc
   }, {})
