@@ -16,7 +16,6 @@ import { dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { build } from 'vite'
 import { fonts as addFontsPlugin } from './fonts.js'
-import { config } from 'dotenv'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const cwd = process.cwd()
@@ -295,6 +294,8 @@ function adexClientBuilder() {
  */
 function adexServerBuilder({ islands = false } = {}) {
   let input = 'src/entry-server.js'
+  const devCSSMap = new Map()
+  let cfg
   return {
     name: `adex-server`,
     enforce: 'pre',
@@ -326,6 +327,20 @@ function adexServerBuilder({ islands = false } = {}) {
         },
       }
     },
+    configResolved(_cfg) {
+      cfg = _cfg
+    },
+    async resolveId(id, importer, meta) {
+      if (id.endsWith('.css')) {
+        const importerFromRoot = importer.replace(resolve(cfg.root), '')
+        const resolvedCss = await this.resolve(id, importer, meta)
+        devCSSMap.set(
+          importerFromRoot,
+          (devCSSMap.get(importer) ?? []).concat(resolvedCss.id)
+        )
+        return
+      }
+    },
     configureServer(server) {
       return () => {
         server.middlewares.use(async function (req, res, next) {
@@ -334,16 +349,23 @@ function adexServerBuilder({ islands = false } = {}) {
             return next()
           }
           try {
-            const { html, serverHandler } = await module.handler(req, res)
+            const { html, serverHandler, pageRoute } = await module.handler(
+              req,
+              res
+            )
             if (serverHandler) {
               return serverHandler(req, res)
             }
+            const cssLinks = devCSSMap.get(pageRoute) ?? []
             let renderedHTML = html.replace(
               '</head>',
               `
               <script type="module">
                 import "virtual:adex:global.css"
               </script>
+              ${cssLinks.map(d => {
+                return `<link rel="stylesheet" href="${d}">`
+              })}
               </head>
             `
             )
