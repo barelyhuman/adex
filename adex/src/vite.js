@@ -342,6 +342,7 @@ function adexServerBuilder({ islands = false } = {}) {
     },
     async resolveId(id, importer, meta) {
       if (id.endsWith('.css')) {
+        if (!importer) return
         const importerFromRoot = importer.replace(resolve(cfg.root), '')
         const resolvedCss = await this.resolve(id, importer, meta)
         devCSSMap.set(
