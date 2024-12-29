@@ -1,10 +1,12 @@
 import { CONSTANTS, emitToHooked } from 'adex/hook'
 import { prepareRequest, prepareResponse } from 'adex/http'
-import { normalizeRouteImports, renderToString, toStatic } from 'adex/ssr'
+import { renderToString, toStatic } from 'adex/ssr'
 import { h } from 'preact'
 
-const apiRoutes = import.meta.glob('/src/api/**/*.{js,ts}')
-const pageRoutes = import.meta.glob('/src/pages/**/*.{tsx,jsx,js}')
+// @ts-expect-error injected by vite
+import { routes as apiRoutes } from '~apiRoutes'
+// @ts-expect-error injected by vite
+import { routes as pageRoutes } from '~routes'
 
 const html = String.raw
 
@@ -14,7 +16,6 @@ export async function handler(req, res) {
   prepareRequest(req)
   prepareResponse(res)
 
-  const { pageRoutes, apiRoutes } = await getRouterMaps()
   const baseURL = req.url
 
   const { metas, links, title, lang } = toStatic()
@@ -114,21 +115,6 @@ function HTMLTemplate({
       </body>
     </html>
   `
-}
-
-async function getRouterMaps() {
-  const apiRouteMap = normalizeRouteImports(apiRoutes, [
-    /^\/(src\/api)/,
-    '/api',
-  ])
-  const pageRouteMap = normalizeRouteImports(pageRoutes, [
-    /^\/(src\/pages)/,
-    '',
-  ])
-  return {
-    pageRoutes: pageRouteMap,
-    apiRoutes: apiRouteMap,
-  }
 }
 
 function getRouteParams(baseURL, matchedRoute) {
