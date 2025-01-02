@@ -5,12 +5,13 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 //@ts-expect-error internal requires
-import { mri, sirv } from 'adex/ssr'
+import { mri, sirv, useMiddleware } from 'adex/ssr'
 
 //@ts-expect-error vite virtual import
 import { handler } from 'virtual:adex:handler'
 
 import 'virtual:adex:global.css'
+import 'virtual:adex:font.css'
 
 const flags = mri(process.argv.slice(2))
 
@@ -27,6 +28,7 @@ const serverAssets = sirv(join(__dirname, './assets'), {
 
 let islandsWereGenerated = existsSync(join(__dirname, './islands'))
 
+// @ts-ignore
 let islandAssets = (req, res, next) => {
   next()
 }
@@ -41,6 +43,7 @@ if (islandsWereGenerated) {
 
 let clientWasGenerated = existsSync(join(__dirname, '../client'))
 
+// @ts-ignore
 let clientAssets = (req, res, next) => {
   next()
 }
@@ -163,17 +166,15 @@ function addDependencyAssets(template, pageRoute) {
   const manifest = getClientManifest()
   const filePath = pageRoute.startsWith('/') ? pageRoute.slice(1) : pageRoute
 
-  const { links: serverLinks, scripts: serverScripts } = manifestToHTML(
-    serverManifest,
-    filePath
-  )
+  const { links: serverLinks } = manifestToHTML(serverManifest, filePath)
+
   const { links: clientLinks, scripts: clientScripts } = manifestToHTML(
     manifest,
     filePath
   )
 
   const links = [...serverLinks, ...clientLinks]
-  const scripts = [...serverScripts, ...clientScripts]
+  const scripts = [...clientScripts]
 
   return template.replace(
     '</head>',
@@ -182,20 +183,32 @@ function addDependencyAssets(template, pageRoute) {
 }
 
 http
-  .createServer((req, res) => {
-    const originalUrl = req.url
-    req.url = originalUrl.replace(/(\/?assets\/?)/, '/')
-    serverAssets(req, res, () => {
-      req.url = originalUrl.replace(/(\/?islands\/?)/, '/')
-      return islandAssets(req, res, () => {
-        req.url = originalUrl.replace(/(\/?client\/?)/, '/')
-        return clientAssets(req, res, () => {
-          req.url = originalUrl
-          defaultHandler(req, res)
-        })
-      })
-    })
-  })
+  .createServer(
+    useMiddleware(
+      async (req, res, next) => {
+        // @ts-expect-error shared-state between the middlewares
+        req.__originalUrl = req.url
+        // @ts-expect-error shared-state between the middlewares
+        req.url = req.__originalUrl.replace(/(\/?assets\/?)/, '/')
+        return serverAssets(req, res, next)
+      },
+      async (req, res, next) => {
+        // @ts-expect-error shared-state between the middlewares
+        req.url = req.__originalUrl.replace(/(\/?islands\/?)/, '/')
+        return islandAssets(req, res, next)
+      },
+      async (req, res, next) => {
+        // @ts-expect-error shared-state between the middlewares
+        req.url = req.__originalUrl.replace(/(\/?client\/?)/, '/')
+        return clientAssets(req, res, next)
+      },
+      async (req, res) => {
+        // @ts-expect-error shared-state between the middlewares
+        req.url = req.__originalUrl
+        return defaultHandler(req, res)
+      }
+    )
+  )
   .listen(PORT, HOST, () => {
     console.log(`Listening on ${HOST}:${PORT}`)
   })

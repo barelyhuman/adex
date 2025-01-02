@@ -55,7 +55,7 @@ export function adex({ fonts, islands = false } = {}) {
       'virtual:adex:client',
       readFileSync(join(__dirname, '../runtime/client.js'), 'utf8')
     ),
-    fonts && Object.keys(fonts).length > 0 && addFontsPlugin(fonts),
+    addFontsPlugin(fonts),
     adexServerBuilder({ islands }),
     !islands && adexClientBuilder(),
     islands && adexIslandsBuilder(),
@@ -345,10 +345,12 @@ function adexServerBuilder({ islands = false } = {}) {
         if (!importer) return
         const importerFromRoot = importer.replace(resolve(cfg.root), '')
         const resolvedCss = await this.resolve(id, importer, meta)
-        devCSSMap.set(
-          importerFromRoot,
-          (devCSSMap.get(importer) ?? []).concat(resolvedCss.id)
-        )
+        if (resolvedCss) {
+          devCSSMap.set(
+            importerFromRoot,
+            (devCSSMap.get(importer) ?? []).concat(resolvedCss.id)
+          )
+        }
         return
       }
     },

@@ -55,6 +55,7 @@
     "next": "bumpp"
   },
   "dependencies": {
+    "@barelyhuman/tiny-use": "^0.0.2",
     "@dumbjs/preland": "^0.0.2",
     "bumpp": "^9.4.1",
     "dotenv": "^16.4.5",
