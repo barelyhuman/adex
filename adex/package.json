@@ -4,7 +4,6 @@
   "description": "An easier way to build apps with Vite and Preact",
   "keywords": [
     "adex",
-    "meta-framework",
     "preact",
     "minimal",
     "server",
@@ -61,6 +60,7 @@
     "dotenv": "^16.4.5",
     "hoofd": "^1.7.1",
     "mri": "^1.2.0",
+    "node-stream-zip": "^1.15.0",
     "preact-render-to-string": "^6.5.5",
     "regexparam": "^3.0.0",
     "sirv": "^2.0.4",
