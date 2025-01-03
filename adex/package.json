@@ -1,6 +1,9 @@
 {
   "name": "adex",
   "version": "0.0.13",
+  "bin": {
+    "adex": "./cli.mjs"
+  },
   "description": "An easier way to build apps with Vite and Preact",
   "keywords": [
     "adex",
@@ -60,7 +63,9 @@
     "bumpp": "^9.4.1",
     "dotenv": "^16.4.5",
     "hoofd": "^1.7.1",
+    "kleur": "^4.1.5",
     "mri": "^1.2.0",
+    "node-stream-zip": "^1.15.0",
     "preact-render-to-string": "^6.5.5",
     "regexparam": "^3.0.0",
     "sirv": "^2.0.4",
