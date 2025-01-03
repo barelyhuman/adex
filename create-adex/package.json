@@ -1,0 +1,28 @@
+{
+  "name": "create-adex",
+  "version": "0.0.0",
+  "bin": {
+    "adex": "./cli.mjs"
+  },
+  "description": "CLI to create adex projects",
+  "keywords": [
+    "adex",
+    "preact",
+    "minimal",
+    "server",
+    "node"
+  ],
+  "bugs": "github.com/barelyhuman/adex/issues",
+  "repository": {
+    "type": "git",
+    "url": "github.com/barelyhuman/adex"
+  },
+  "type": "module",
+  "files": [
+    "cli.mjs"
+  ],
+  "dependencies": {
+    "kleur": "^4.1.5",
+    "node-stream-zip": "^1.15.0"
+  }
+}

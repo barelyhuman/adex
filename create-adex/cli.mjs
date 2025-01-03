@@ -58,19 +58,17 @@ ${k.gray('[FLAGS]')}
     return
   }
 
-  if (existsSync(targetDir)) {
-    const entries = await readdir(targetDir)
-    if (entries.filter(d => d != '.tmp').length) {
-      console.log(
-        `${failure(`[FAIL]`)} ${k.bold(targetDir)} is not empty, aborting initialisation`
-      )
-      return
-    }
-  }
-
-  console.log(info(`Initializing in ${targetDir}`))
-
   if (init) {
+    if (existsSync(targetDir)) {
+      const entries = await readdir(targetDir)
+      if (entries.filter(d => d != '.tmp').length) {
+        console.log(
+          `${failure(`[FAIL]`)} ${k.bold(targetDir)} is not empty, aborting initialisation`
+        )
+        return
+      }
+    }
+    console.log(info(`Initializing in ${targetDir}`))
     const selectedTemplate = TEMPLATES.default
     const targetFilePath = await downloadFile(
       selectedTemplate.link,
