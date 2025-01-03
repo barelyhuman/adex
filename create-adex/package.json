@@ -2,7 +2,7 @@
   "name": "create-adex",
   "version": "0.0.0",
   "bin": {
-    "adex": "./cli.mjs"
+    "create-adex": "./cli.mjs"
   },
   "description": "CLI to create adex projects",
   "keywords": [

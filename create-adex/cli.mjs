@@ -30,10 +30,6 @@ const flags = parseArgs({
       type: 'boolean',
       default: false,
     },
-    init: {
-      type: 'boolean',
-      default: false,
-    },
   },
 })
 
@@ -58,81 +54,79 @@ ${k.gray('[FLAGS]')}
     return
   }
 
-  if (init) {
-    if (existsSync(targetDir)) {
-      const entries = await readdir(targetDir)
-      if (entries.filter(d => d != '.tmp').length) {
-        console.log(
-          `${failure(`[FAIL]`)} ${k.bold(targetDir)} is not empty, aborting initialisation`
-        )
-        return
-      }
-    }
-    console.log(info(`Initializing in ${targetDir}`))
-    const selectedTemplate = TEMPLATES.default
-    const targetFilePath = await downloadFile(
-      selectedTemplate.link,
-      'adex-template.zip'
-    )
-
-    const unzipStream = new StreamZip.async({
-      file: targetFilePath,
-    })
-
-    const entries = await unzipStream.entries()
-
-    const files = (
-      await Promise.all(
-        Object.values(entries).map(async entry => {
-          const outFile = join(TMP_FOLDER_PREFX, 'out', entry.name)
-          await mkdir(dirname(outFile), { recursive: true })
-          await unzipStream.extract(entry, outFile)
-          if (entry.isFile) {
-            return outFile
-          }
-        })
+  if (existsSync(targetDir)) {
+    const entries = await readdir(targetDir)
+    if (entries.filter(d => d != '.tmp').length) {
+      console.log(
+        `${failure(`[FAIL]`)} ${k.bold(targetDir)} is not empty, aborting initialisation`
       )
-    ).filter(Boolean)
+      return
+    }
+  }
+  console.log(info(`Initializing in ${targetDir}`))
+  const selectedTemplate = TEMPLATES.default
+  const targetFilePath = await downloadFile(
+    selectedTemplate.link,
+    'adex-template.zip'
+  )
 
-    await Promise.allSettled(
-      files
-        .map(d => {
-          const absolutePath = resolve(d)
-          return {
-            source: absolutePath,
-            dest: absolutePath.replace(
-              join(
-                process.cwd(),
-                TMP_FOLDER_PREFX,
-                'out',
-                selectedTemplate.name + '-' + selectedTemplate.branch
-              ),
-              resolve(targetDir)
-            ),
-          }
-        })
-        .map(async d => {
-          try {
-            await mkdir(dirname(d.dest), { recursive: true })
-            await copyFile(d.source, d.dest)
-            console.log(`${k.gray('[Created]')} ${k.white(d.dest)}`)
-          } catch (err) {
-            console.log(failure(`[FAIL] Creation: ${d.dest}, ${err.message}`))
-          }
-        })
+  const unzipStream = new StreamZip.async({
+    file: targetFilePath,
+  })
+
+  const entries = await unzipStream.entries()
+
+  const files = (
+    await Promise.all(
+      Object.values(entries).map(async entry => {
+        const outFile = join(TMP_FOLDER_PREFX, 'out', entry.name)
+        await mkdir(dirname(outFile), { recursive: true })
+        await unzipStream.extract(entry, outFile)
+        if (entry.isFile) {
+          return outFile
+        }
+      })
     )
+  ).filter(Boolean)
 
-    rm(TMP_FOLDER_PREFX, { recursive: true })
+  await Promise.allSettled(
+    files
+      .map(d => {
+        const absolutePath = resolve(d)
+        return {
+          source: absolutePath,
+          dest: absolutePath.replace(
+            join(
+              process.cwd(),
+              TMP_FOLDER_PREFX,
+              'out',
+              selectedTemplate.name + '-' + selectedTemplate.branch
+            ),
+            resolve(targetDir)
+          ),
+        }
+      })
+      .map(async d => {
+        try {
+          await mkdir(dirname(d.dest), { recursive: true })
+          await copyFile(d.source, d.dest)
+          console.log(`${k.gray('[Created]')} ${k.white(d.dest)}`)
+        } catch (err) {
+          console.log(failure(`[FAIL] Creation: ${d.dest}, ${err.message}`))
+        }
+      })
+  )
 
-    console.log(
-      `\nNext Steps\n
+  rm(TMP_FOLDER_PREFX, { recursive: true })
+
+  console.log(
+    `\nNext Steps\n
 $ cd ${targetDir}
 $ npm i`
-    )
-    console.log(success('\nDone!\n'))
+  )
+  console.log(success('\nDone!\n'))
 
-    return
-  }
+  return
 }
 
 async function downloadFile(url, fileName) {
