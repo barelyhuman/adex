@@ -1,0 +1,26 @@
+{
+  "name": "adex-adapter-node",
+  "version": "0.0.0",
+  "keywords": [
+    "adex",
+    "preact",
+    "minimal",
+    "server",
+    "node"
+  ],
+  "bugs": "github.com/barelyhuman/adex/issues",
+  "repository": {
+    "type": "git",
+    "url": "github.com/barelyhuman/adex"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js"
+    }
+  },
+  "files": [
+    "lib"
+  ]
+}

@@ -23,11 +23,19 @@ const cwd = process.cwd()
 const islandsDir = join(cwd, '.islands')
 let runningIslandBuild = false
 
+const adapterMap = {
+  node: 'adex-adapter-node',
+}
+
 /**
  * @param {import("./vite.js").AdexOptions} [options]
  * @returns
  */
-export function adex({ fonts, islands = false } = {}) {
+export function adex({
+  fonts,
+  islands = false,
+  adapter: adapter = 'node',
+} = {}) {
   return [
     preactPages({
       root: '/src/pages',
@@ -49,7 +57,24 @@ export function adex({ fonts, islands = false } = {}) {
     ),
     createVirtualModule(
       'virtual:adex:server',
-      readFileSync(join(__dirname, '../runtime/server.js'), 'utf8')
+      `import { createServer } from '${adapterMap[adapter]}'
+
+      import { env } from 'adex/env'
+      
+      const PORT = parseInt(env.get('PORT', '3000'), 10)
+      const HOST = env.get('HOST', 'localhost')
+      
+      const server = createServer({
+        port: PORT,
+        host: HOST,
+      })
+      
+      if ('run' in server) {
+        server.run()
+      }
+      
+      export default server.fetch
+      `
     ),
     createVirtualModule(
       'virtual:adex:client',
@@ -333,6 +358,7 @@ function adexServerBuilder({ islands = false } = {}) {
             input: {
               index: input,
             },
+            external: ['adex/ssr'],
           },
         },
       }

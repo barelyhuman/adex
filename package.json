@@ -10,7 +10,8 @@
     "play": "pnpm --filter='playground' -r dev",
     "test": "echo 'true'",
     "publish:ci": "lerna publish from-git --registry 'https://registry.npmjs.org' --yes",
-    "next": "lerna version --sync-workspace-lock"
+    "next": "lerna version --sync-workspace-lock",
+    "nuke": "pnpm -r exec rm -rvf  node_modules"
   },
   "license": "MIT",
   "prettier": "@barelyhuman/prettier-config",
@@ -23,8 +24,7 @@
   },
   "pnpm": {
     "overrides": {
-      "cross-spawn@>=7.0.0 <7.0.5": ">=7.0.5",
-      "nanoid@<3.3.8": ">=3.3.8"
+      "cross-spawn@>=7.0.0 <7.0.5": ">=7.0.5"
     }
   }
 }

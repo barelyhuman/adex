@@ -1,22 +1,14 @@
-import { env } from 'adex/env'
 import { existsSync, readFileSync } from 'node:fs'
 import http from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-//@ts-expect-error internal requires
-import { mri, sirv, useMiddleware } from 'adex/ssr'
+import { sirv, useMiddleware } from 'adex/ssr'
 
-//@ts-expect-error vite virtual import
 import { handler } from 'virtual:adex:handler'
 
 import 'virtual:adex:global.css'
 import 'virtual:adex:font.css'
-
-const flags = mri(process.argv.slice(2))
-
-const PORT = flags.port || parseInt(env.get('PORT', '3000'), 10)
-const HOST = flags.host || env.get('HOST', 'localhost')
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -182,8 +174,8 @@ function addDependencyAssets(template, pageRoute) {
   )
 }
 
-http
-  .createServer(
+export const createServer = ({ port = '3000', host = '127.0.0.1' } = {}) => {
+  const server = http.createServer(
     useMiddleware(
       async (req, res, next) => {
         // @ts-expect-error shared-state between the middlewares
@@ -209,6 +201,13 @@ http
       }
     )
   )
-  .listen(PORT, HOST, () => {
-    console.log(`Listening on ${HOST}:${PORT}`)
-  })
+
+  return {
+    run() {
+      return server.listen(port, host, () => {
+        console.log(`Listening on ${host}:${port}`)
+      })
+    },
+    fetch: undefined,
+  }
+}

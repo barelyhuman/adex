@@ -71,11 +71,17 @@
     "@preact/preset-vite": "^2.8.2",
     "@types/node": "^20.14.10",
     "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.39",
     "tailwindcss": "^3.4.4",
-    "vite": "^5.3.1"
+    "vite": "^5.3.1",
+    "adex-adapter-node": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "adex-adapter-node": {
+      "optional": true
+    }
   },
   "peerDependencies": {
+    "adex-adapter-node": ">=0.0.15",
     "@preact/preset-vite": ">=2.8.2",
     "preact": "^10.22.0"
   }
