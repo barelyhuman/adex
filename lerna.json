@@ -3,5 +3,5 @@
   "version": "0.0.15",
   "changelogPreset": "angular",
   "npmClient": "pnpm",
-  "packages": ["adex", "create-adex", "playground", "adex-adapter-node"]
+  "packages": ["adex", "create-adex", "playground", "packages/**/*"]
 }
