@@ -389,6 +389,7 @@ function adexServerBuilder({ islands = false } = {}) {
         appType: 'custom',
         ssr: {
           external: ['preact', 'adex', 'preact-render-to-string'],
+          noExternal: Object.values(adapterMap),
         },
         build: {
           outDir: 'dist/server',
