@@ -2,3 +2,4 @@ packages:
   - adex
   - create-adex
   - playground
+  - packages/**/*
