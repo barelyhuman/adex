@@ -1,5 +1,5 @@
 import { Plugin } from 'vite'
-import type { Options as FontOptions } from './fonts'
+import type { Options as FontOptions } from './fonts.js'
 
 export type Adapters = 'node'
 
