@@ -1,6 +1,6 @@
 {
   "name": "adex",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "An easier way to build apps with Vite and Preact",
   "keywords": [
     "adex",
@@ -70,10 +70,10 @@
   "devDependencies": {
     "@preact/preset-vite": "^2.8.2",
     "@types/node": "^20.14.10",
+    "adex-adapter-node": "workspace:*",
     "autoprefixer": "^10.4.19",
     "tailwindcss": "^3.4.4",
-    "vite": "^5.3.1",
-    "adex-adapter-node": "workspace:*"
+    "vite": "^5.3.1"
   },
   "peerDependenciesMeta": {
     "adex-adapter-node": {
@@ -81,8 +81,8 @@
     }
   },
   "peerDependencies": {
-    "adex-adapter-node": ">=0.0.15",
     "@preact/preset-vite": ">=2.8.2",
+    "adex-adapter-node": ">=0.0.15",
     "preact": "^10.22.0"
   }
 }
