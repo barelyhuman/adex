@@ -16,7 +16,7 @@ export async function handler(req, res) {
   prepareRequest(req)
   prepareResponse(res)
 
-  const baseURL = req.url
+  const [baseURL] = req.url.split('?')
 
   const { metas, links, title, lang } = toStatic()
 
