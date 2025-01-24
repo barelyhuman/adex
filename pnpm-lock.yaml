@@ -76,8 +76,8 @@ importers:
         specifier: ^20.14.10
         version: 20.16.10
       adex-adapter-node:
-        specifier: workspace:*
-        version: link:../packages/adapters/node
+        specifier: ^0.0.17
+        version: 0.0.17
       autoprefixer:
         specifier: ^10.4.19
         version: 10.4.20(postcss@8.4.47)
@@ -898,6 +898,9 @@ packages:
 
   add-stream@1.0.0:
     resolution: {integrity: sha512-qQLMr+8o0WC4FZGQTcJiKBVC59JylcPSrTtk6usvmIDFUOCKegapy1VHQwRbFMOFyb/inzUVqHs+eMYKDM1YeQ==, tarball: https://registry.npmjs.org/add-stream/-/add-stream-1.0.0.tgz}
+
+  adex-adapter-node@0.0.17:
+    resolution: {integrity: sha512-AoYh81196oIiA1KqLanJKRGL+4mHptnzx7Ig4tG1NnMz756lZmSZPvSyt0luKtbz7nL53pHtY9euaHqdWDMmNw==, tarball: https://registry.npmjs.org/adex-adapter-node/-/adex-adapter-node-0.0.17.tgz}
 
   agent-base@7.1.1:
     resolution: {integrity: sha512-H0TSyFNDMomMNJQBn8wFV5YC/2eJ+VXECwOadZJT554xP6cODZHPX3H9QMQECxvrgiSOP1pHjy1sMWQVYJOUOA==, tarball: https://registry.npmjs.org/agent-base/-/agent-base-7.1.1.tgz}
@@ -3702,6 +3705,8 @@ snapshots:
   acorn@8.12.1: {}
 
   add-stream@1.0.0: {}
+
+  adex-adapter-node@0.0.17: {}
 
   agent-base@7.1.1:
     dependencies:
