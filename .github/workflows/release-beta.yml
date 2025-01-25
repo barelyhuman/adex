@@ -3,7 +3,7 @@ name: release
 on:
   push:
     tags:
-      - '*-beta.*'
+      - '*-alpha.*'
 
 jobs:
   publish_beta:
