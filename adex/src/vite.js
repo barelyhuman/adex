@@ -9,6 +9,7 @@ import {
   isFunctionIsland,
   readSourceFile,
 } from '@dumbjs/preland'
+import Unimport from 'unimport/unplugin'
 import { addImportToAST, codeFromAST } from '@dumbjs/preland/ast'
 import preact from '@preact/preset-vite'
 import { mkdirSync, readFileSync, writeFileSync } from 'fs'
@@ -37,6 +38,7 @@ export function adex({
   adapter: adapter = 'node',
 } = {}) {
   return [
+    adexConfig(),
     preactPages({
       root: '/src/pages',
       id: '~routes',
@@ -61,15 +63,15 @@ export function adex({
       import { dirname, join } from 'node:path'
       import { fileURLToPath } from 'node:url'
       import { existsSync, readFileSync } from 'node:fs'
-      import { env } from 'adex/env'
+      import {env} from "adex/env"
 
       import 'virtual:adex:font.css'
       import 'virtual:adex:global.css'
       
       const __dirname = dirname(fileURLToPath(import.meta.url))
 
-      const PORT = parseInt(env.get('PORT', '3000'), 10)
-      const HOST = env.get('HOST', 'localhost')
+      const PORT = parseInt(env.get("PORT","3000"))
+      const HOST = env.get("HOST","localhost") 
 
       const paths = {
         assets: join(__dirname, './assets'),
@@ -128,7 +130,6 @@ export function adex({
     adexServerBuilder({ islands }),
     !islands && adexClientBuilder(),
     islands && adexIslandsBuilder(),
-    ...adexGuards(),
   ]
 }
 
@@ -212,6 +213,10 @@ function adexIslandsBuilder() {
           await build({
             configFile: false,
             plugins: [preact()],
+            define: {
+              'import.meta.server': false,
+              'import.meta.client': true,
+            },
             build: {
               ssr: false,
               outDir: join(outDir, 'islands'),
@@ -346,6 +351,10 @@ function adexClientBuilder() {
             ),
             preact({ prefreshEnabled: false }),
           ],
+          define: {
+            'import.meta.client': true,
+            'import.meta.server': false,
+          },
           build: {
             outDir: 'dist/client',
             emptyOutDir: true,
@@ -388,8 +397,12 @@ function adexServerBuilder({ islands = false } = {}) {
       return {
         appType: 'custom',
         ssr: {
-          external: ['preact', 'adex', 'preact-render-to-string'],
-          noExternal: Object.values(adapterMap),
+          external: ['preact', 'preact-render-to-string'],
+          noExternal: Object.values(adapterMap).concat('adex/env'),
+        },
+        define: {
+          'import.meta.server': true,
+          'import.meta.client': false,
         },
         build: {
           outDir: 'dist/server',
@@ -479,45 +492,32 @@ function adexServerBuilder({ islands = false } = {}) {
 /**
  * @returns {import("vite").Plugin[]}
  */
-function adexGuards() {
+function adexConfig() {
   return [
+    // @ts-expect-error something wrong wrong
+    Unimport.vite({
+      imports: [
+        {
+          name: '$fetch',
+          from: fileURLToPath(new URL('../runtime/fetch.js', import.meta.url)),
+        },
+      ],
+    }),
     {
-      name: 'adex-guard-env',
+      name: 'adex-config',
       enforce: 'pre',
-      async transform(code, id) {
-        // ignore usage of `process.env` in node_modules
-        // Still risky but hard to do anything about
-        const nodeMods = resolve(cwd, 'node_modules')
-        if (id.startsWith(nodeMods)) return
-
-        // ignore usage of `process.env` in `adex/env`
-        const envLoadId = await this.resolve('adex/env')
-        if (id === envLoadId.id) return
-
-        if (code.includes('process.env')) {
-          this.error(
-            'Avoid using `process.env` to access environment variables and secrets. Use `adex/env` instead'
-          )
+      config() {
+        return {
+          server: {
+            port: 3000,
+          },
+          define: {
+            'import.meta.env.PORT': JSON.stringify(process.env.PORT ?? '3000'),
+            'import.meta.env.HOST': JSON.stringify(
+              process.env.HOST ?? 'localhost'
+            ),
+          },
         }
-      },
-      writeBundle() {
-        const pagesPath = resolve(cwd, 'src/pages')
-        const info = this.getModuleInfo('adex/env')
-        const viteRef = this
-
-        function checkTree(importPath, importStack = []) {
-          if (importPath.startsWith(pagesPath)) {
-            throw new Error(
-              `Cannot use/import \`adex/env\` on the client side, importerStack: ${importStack.join(' -> ')}`
-            )
-          }
-          viteRef
-            .getModuleInfo(importPath)
-            .importers.forEach(d =>
-              checkTree(d, [...importStack, importPath, d])
-            )
-        }
-        info.importers.forEach(i => checkTree(i))
       },
     },
   ]

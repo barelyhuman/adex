@@ -21,6 +21,9 @@
       "types": "./src/ssr.d.ts",
       "import": "./src/ssr.js"
     },
+    "./types": {
+      "types": "./types.d.ts"
+    },
     "./head": {
       "types": "./src/head.d.ts",
       "import": "./src/head.js"
@@ -61,11 +64,13 @@
     "hoofd": "^1.7.1",
     "mri": "^1.2.0",
     "node-stream-zip": "^1.15.0",
+    "ofetch": "^1.4.1",
     "preact-render-to-string": "^6.5.5",
     "regexparam": "^3.0.0",
     "sirv": "^2.0.4",
     "trouter": "^4.0.0",
-    "unifont": "^0.0.2"
+    "unifont": "^0.0.2",
+    "unimport": "^4.0.0"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.8.2",
