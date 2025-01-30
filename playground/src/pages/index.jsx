@@ -1,6 +1,13 @@
 import { useState } from 'preact/hooks'
 import './local-index.css'
 import { Counter } from '../components/counter.tsx'
+import { signal } from '@preact/signals'
+
+const data = signal({})
+
+$fetch('/api/hello').then(d => {
+  data.value = d
+})
 
 export default function Page() {
   const [count, setCount] = useState(0)
@@ -36,6 +43,7 @@ export default function Page() {
           <Counter />
         </span>
       </p>
+      <pre>{JSON.stringify(data.value, null, 2)}</pre>
     </div>
   )
 }

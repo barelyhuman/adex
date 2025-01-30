@@ -1,7 +1,6 @@
+import { render, h } from 'preact'
 
-  import { render, h } from 'preact';
-  
-  // h() imports will be added at build time since this file is inlined with the client template
+// h() imports will be added at build time since this file is inlined with the client template
 
 const restoreTree = (type, props = {}) => {
   if (typeof props.children === 'object') {
@@ -61,49 +60,53 @@ function mergePropsWithDOM(rootNode, props) {
   rootNode.append(...scriptNodes)
 }
 
+init()
 
-  init()
-  
-  function init(){
-    if(customElements.get("island-counter")){
-      return
-    }
-    customElements.define("island-counter", class IslandCounter extends HTMLElement {
-      constructor(){
-        super();
+function init() {
+  if (customElements.get('island-counter')) {
+    return
+  }
+  customElements.define(
+    'island-counter',
+    class IslandCounter extends HTMLElement {
+      constructor() {
+        super()
       }
-    
+
       async connectedCallback() {
-          const c = await import("/Users/sid/code/adex/playground/src/components/counter.tsx");
-          const usableComponent = c["Counter"]
-          const props = JSON.parse(this.dataset.props  || '{}');
-          this.baseProps = props
-          this.component = usableComponent
-          this.renderOnView({threshold:0.2})              
+        const c = await import(
+          '/Users/sid/code/adex/playground/src/components/counter.tsx'
+        )
+        const usableComponent = c['Counter']
+        const props = JSON.parse(this.dataset.props || '{}')
+        this.baseProps = props
+        this.component = usableComponent
+        this.renderOnView({ threshold: 0.2 })
       }
-    
-      renderOnView({threshold} = {}){
+
+      renderOnView({ threshold } = {}) {
         const options = {
           root: null,
           threshold,
-        };
-    
-        const self = this;
-    
-        const callback = function(entries, observer) {
-           entries.forEach((entry) => {
-            if(!entry.isIntersecting) return
-            self.renderIsland()
-           });
         }
-    
-        let observer = new IntersectionObserver(callback, options);
-        observer.observe(this);
+
+        const self = this
+
+        const callback = function (entries, observer) {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) return
+            self.renderIsland()
+          })
+        }
+
+        let observer = new IntersectionObserver(callback, options)
+        observer.observe(this)
       }
-    
-      renderIsland(){
-        mergePropsWithDOM(this, this.baseProps);
+
+      renderIsland() {
+        mergePropsWithDOM(this, this.baseProps)
         render(restoreTree(this.component, this.baseProps), this, undefined)
       }
-    })
-  }
+    }
+  )
+}
