@@ -1,16 +1,17 @@
-const isClient = typeof window !== 'undefined'
+export const env = {}
 
-if (isClient) {
-  throw new Error('[adex] Cannot use/import `adex/env` on the client side')
-}
-
-export const env = {
-  get(key, defaultValue = '') {
-    if (isClient) return ''
+if (import.meta.server) {
+  env.get = (key, defaultValue = '') => {
     return process.env[key] ?? defaultValue
-  },
-  set(key, value) {
-    if (isClient) return ''
+  }
+  env.set = (key, value) => {
     return (process.env[key] = value)
-  },
+  }
+} else {
+  env.get = (key, defaultValue = '') => {
+    return import.meta.env[key] ?? defaultValue
+  }
+  env.set = (key, value) => {
+    return (import.meta.env[key] = value)
+  }
 }

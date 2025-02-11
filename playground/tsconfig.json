@@ -5,6 +5,7 @@
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "moduleResolution": "Node",
+    "types": ["adex/types"],
     "paths": {
       "adex": ["../adex/vite.js"],
       "adex/*": ["../adex/src/*"]
