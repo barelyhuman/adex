@@ -15,7 +15,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { readFile, rm } from 'fs/promises'
 import { dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'
-import { build } from 'vite'
+import { build, mergeConfig } from 'vite'
 import { fonts as addFontsPlugin } from './fonts.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -35,6 +35,7 @@ export function adex({
   fonts,
   islands = false,
   adapter: adapter = 'node',
+  __clientConfig = {},
 } = {}) {
   return [
     preactPages({
@@ -127,8 +128,8 @@ export function adex({
     addFontsPlugin(fonts),
     adexServerBuilder({ islands }),
     adexBuildPrep({ islands }),
-    !islands && adexClientBuilder(),
-    islands && adexIslandsBuilder(),
+    !islands && adexClientBuilder({ config: __clientConfig }),
+    islands && adexIslandsBuilder({ config: __clientConfig }),
     ...adexGuards(),
   ]
 }
@@ -162,9 +163,11 @@ function adexBuildPrep({ islands = false }) {
 }
 
 /**
+ * @param {object} opts
+ * @param {import("vite").UserConfig} opts.config
  * @returns {import("vite").Plugin[]}
  */
-function adexIslandsBuilder() {
+function adexIslandsBuilder(opts) {
   const clientVirtuals = {}
   let isBuild = false
   let outDir
@@ -238,27 +241,29 @@ function adexIslandsBuilder() {
           if (Object.keys(clientVirtuals).length === 0) return
           if (runningIslandBuild) return
 
-          await build({
-            configFile: false,
-            plugins: [preact()],
-            build: {
-              ssr: false,
-              outDir: join(outDir, 'islands'),
-              emptyOutDir: true,
-              rollupOptions: {
-                output: {
-                  format: 'esm',
-                  entryFileNames: '[name].js',
+          await build(
+            mergeConfig(opts.config, {
+              configFile: false,
+              plugins: [preact()],
+              build: {
+                ssr: false,
+                outDir: join(outDir, 'islands'),
+                emptyOutDir: true,
+                rollupOptions: {
+                  output: {
+                    format: 'esm',
+                    entryFileNames: '[name].js',
+                  },
+                  input: Object.fromEntries(
+                    Object.entries(clientVirtuals).map(([k, v]) => {
+                      const key = getIslandName(k)
+                      return [key, join(islandsDir, key + '.js')]
+                    })
+                  ),
                 },
-                input: Object.fromEntries(
-                  Object.entries(clientVirtuals).map(([k, v]) => {
-                    const key = getIslandName(k)
-                    return [key, join(islandsDir, key + '.js')]
-                  })
-                ),
               },
-            },
-          })
+            })
+          )
         },
       },
     },
@@ -338,9 +343,11 @@ function createUserDefaultVirtualModule(id, content, userPath) {
 }
 
 /**
+ * @param {object} options
+ * @param {import('vite').UserConfig} options.config
  * @returns {import("vite").Plugin}
  */
-function adexClientBuilder() {
+function adexClientBuilder(opts) {
   let options
   return {
     name: 'adex-client',
@@ -353,45 +360,46 @@ function adexClientBuilder() {
         const usablePlugins = options.plugins
           .filter(d => !d.name.startsWith('vite:'))
           .filter(d => !d.name.startsWith('adex-') || d.name === 'adex-fonts')
-        await build({
-          configFile: false,
-          appType: 'custom',
-          base: '/client',
-          plugins: [
-            ...usablePlugins,
-            createVirtualModule(
-              'virtual:adex:client',
-              readFileSync(join(__dirname, '../runtime/client.js'), 'utf8')
-            ),
-            createUserDefaultVirtualModule(
-              'virtual:adex:index.html',
-              '',
-              'src/index.html'
-            ),
-            createUserDefaultVirtualModule(
-              'virtual:adex:global.css',
-              '',
-              'src/global.css'
-            ),
-            preact({ prefreshEnabled: false }),
-          ],
-          build: {
-            outDir: 'dist/client',
-            emptyOutDir: true,
-            ssr: false,
-            target: 'esnext',
-            manifest: 'manifest.json',
-            rollupOptions: {
-              input: {
-                index: 'virtual:adex:client',
-              },
-              output: {
-                entryFileNames: '[name]-[hash].js',
-                format: 'esm',
+        await build(
+          mergeConfig(opts, {
+            configFile: false,
+            appType: 'custom',
+            base: '/client',
+            plugins: [
+              ...usablePlugins,
+              createVirtualModule(
+                'virtual:adex:client',
+                readFileSync(join(__dirname, '../runtime/client.js'), 'utf8')
+              ),
+              createUserDefaultVirtualModule(
+                'virtual:adex:index.html',
+                '',
+                'src/index.html'
+              ),
+              createUserDefaultVirtualModule(
+                'virtual:adex:global.css',
+                '',
+                'src/global.css'
+              ),
+              preact({ prefreshEnabled: false }),
+            ],
+            build: {
+              outDir: 'dist/client',
+              emptyOutDir: true,
+              ssr: false,
+              manifest: 'manifest.json',
+              rollupOptions: {
+                input: {
+                  index: 'virtual:adex:client',
+                },
+                output: {
+                  entryFileNames: '[name]-[hash].js',
+                  format: 'esm',
+                },
               },
             },
-          },
-        })
+          })
+        )
       })
     },
   }
