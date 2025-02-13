@@ -11,8 +11,8 @@ import {
 } from '@dumbjs/preland'
 import { addImportToAST, codeFromAST } from '@dumbjs/preland/ast'
 import preact from '@preact/preset-vite'
-import { mkdirSync, readFileSync, writeFileSync } from 'fs'
-import { readFile } from 'fs/promises'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { readFile, rm } from 'fs/promises'
 import { dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { build } from 'vite'
@@ -126,10 +126,39 @@ export function adex({
     ),
     addFontsPlugin(fonts),
     adexServerBuilder({ islands }),
+    adexBuildPrep({ islands }),
     !islands && adexClientBuilder(),
     islands && adexIslandsBuilder(),
     ...adexGuards(),
   ]
+}
+
+/**
+ * @returns {import("vite").Plugin}
+ */
+function adexBuildPrep({ islands = false }) {
+  return {
+    name: 'remover',
+    apply: 'build',
+    async configResolved(config) {
+      if (!islands) return
+
+      // Making it order safe
+      const outDirNormalized = config.build.outDir.endsWith('/server')
+        ? dirname(config.build.outDir)
+        : config.build.outDir
+
+      // remove the `client` dir if islands are on,
+      // we don't generate the client assets and
+      // their existence adds the client entry into the bundle
+      const clientDir = join(outDirNormalized, 'client')
+      if (!existsSync(clientDir)) return
+      await rm(clientDir, {
+        recursive: true,
+        force: true,
+      })
+    },
+  }
 }
 
 /**
@@ -215,7 +244,7 @@ function adexIslandsBuilder() {
             build: {
               ssr: false,
               outDir: join(outDir, 'islands'),
-              emptyOutDir: false,
+              emptyOutDir: true,
               rollupOptions: {
                 output: {
                   format: 'esm',
@@ -357,7 +386,7 @@ function adexClientBuilder() {
                 index: 'virtual:adex:client',
               },
               output: {
-                entryFileNames: '[name].js',
+                entryFileNames: '[name]-[hash].js',
                 format: 'esm',
               },
             },
@@ -392,7 +421,7 @@ function adexServerBuilder({ islands = false } = {}) {
           noExternal: Object.values(adapterMap),
         },
         build: {
-          outDir: 'dist/server',
+          outDir: join(conf.build?.outDir ?? 'dist', 'server'),
           emptyOutDir: true,
           assetsDir: 'assets',
           ssrEmitAssets: true,
