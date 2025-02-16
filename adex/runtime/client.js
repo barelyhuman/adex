@@ -43,14 +43,6 @@ export const App = ({ url = '' }) => {
 }
 
 async function hydrate() {
-  // const entryPage = document.getElementById('app').dataset.entryPage
-  // const routeParams = document.getElementById('app').dataset.routeParams
-  // const componentModule = await routes[entryPage]()
-  // const Component =
-  //   'default' in componentModule ? componentModule.default : componentModule
-  // {
-  //   routeParams: routeParams ? JSON.parse(atob(routeParams)) : {},
-  // }
   preactHydrate(h(ComponentWrapper, {}), document.getElementById('app'))
 }
 if (typeof window !== 'undefined') {
