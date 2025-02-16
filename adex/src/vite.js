@@ -61,16 +61,14 @@ export function adex({
       'virtual:adex:handler',
       readFileSync(join(__dirname, '../runtime/handler.js'), 'utf8')
     ),
-    // addFontsPlugin(fonts),
+    addFontsPlugin(fonts),
     adexDevServer({ islands }),
     adexBuildPrep({ islands }),
-    adexClientBuilder(),
+    adexClientBuilder({ islands }),
+    adexIslandsBuilder(),
 
     // SSR/Render Server Specific plugins
-    ssr && adexServerBuilder({ fonts, adapter }),
-    // ssr && !islands && adexClientSSRBuilder({ config: __clientConfig }),
-    ssr && islands && adexIslandsBuilder({ config: __clientConfig }),
-
+    ssr && adexServerBuilder({ fonts, adapter, islands }),
     ...adexGuards(),
   ]
 }
@@ -78,7 +76,7 @@ export function adex({
 /**
  * @returns {import("vite").Plugin}
  */
-function adexClientBuilder() {
+function adexClientBuilder({ islands = false } = {}) {
   return {
     name: 'adex-client-builder',
     config(cfg) {
@@ -86,6 +84,7 @@ function adexClientBuilder() {
       return {
         appType: 'custom',
         build: {
+          write: !islands,
           manifest: 'manifest.json',
           outDir: join(out, 'client'),
           rollupOptions: {
@@ -101,13 +100,13 @@ function adexClientBuilder() {
     generateBundle(opts, bundle) {
       let clientEntryPath
       for (const key in bundle) {
-        console.log({ key })
         if (bundle[key].name == '_virtual_adex_client') {
           clientEntryPath = key
         }
       }
 
       const links = [
+        // @ts-expect-error invalid types by vite? figure this out
         ...(bundle[clientEntryPath]?.viteMetadata?.importedCss ?? new Set()),
       ].map(d => {
         return `<link rel="stylesheet" href="/${d}" />`
@@ -157,11 +156,9 @@ function adexBuildPrep({ islands = false }) {
 }
 
 /**
- * @param {object} opts
- * @param {import("vite").UserConfig} opts.config
  * @returns {import("vite").Plugin[]}
  */
-function adexIslandsBuilder(opts) {
+function adexIslandsBuilder() {
   const clientVirtuals = {}
   let isBuild = false
   let outDir
@@ -191,6 +188,7 @@ function adexIslandsBuilder(opts) {
         if (!islands.length) return
 
         islands.forEach(node => {
+          //@ts-expect-error FIX: in preland
           injectIslandAST(node.ast, node)
           const clientCode = generateClientTemplate(node.id).replace(
             IMPORT_PATH_PLACEHOLDER,
@@ -236,27 +234,30 @@ function adexIslandsBuilder(opts) {
           if (runningIslandBuild) return
 
           await build(
-            mergeConfig(opts.config, {
-              configFile: false,
-              plugins: [preact()],
-              build: {
-                ssr: false,
-                outDir: join(outDir, 'islands'),
-                emptyOutDir: true,
-                rollupOptions: {
-                  output: {
-                    format: 'esm',
-                    entryFileNames: '[name].js',
+            mergeConfig(
+              {},
+              {
+                configFile: false,
+                plugins: [preact()],
+                build: {
+                  ssr: false,
+                  outDir: join(outDir, 'islands'),
+                  emptyOutDir: true,
+                  rollupOptions: {
+                    output: {
+                      format: 'esm',
+                      entryFileNames: '[name].js',
+                    },
+                    input: Object.fromEntries(
+                      Object.entries(clientVirtuals).map(([k, v]) => {
+                        const key = getIslandName(k)
+                        return [key, join(islandsDir, key + '.js')]
+                      })
+                    ),
                   },
-                  input: Object.fromEntries(
-                    Object.entries(clientVirtuals).map(([k, v]) => {
-                      const key = getIslandName(k)
-                      return [key, join(islandsDir, key + '.js')]
-                    })
-                  ),
                 },
-              },
-            })
+              }
+            )
           )
         },
       },
@@ -492,10 +493,11 @@ function adexDevServer({ islands = false } = {}) {
 /**
  * @param {object} options
  * @param {import("./fonts.js").Options} options.fonts
- * * @param {string} options.adapter
+ * @param {string} options.adapter
+ * @param {boolean} options.islands
  * @returns {import("vite").Plugin}
  */
-function adexServerBuilder({ fonts, adapter }) {
+function adexServerBuilder({ fonts, adapter, islands }) {
   let input = 'src/entry-server.js'
   let cfg
   return {
@@ -516,6 +518,8 @@ function adexServerBuilder({ fonts, adapter }) {
         ? join(dirname(defOut), 'server')
         : join(defOut, 'server')
 
+      console.log(`\nBuilding Server: ${serverOutDir}\n`)
+
       await build({
         configFile: false,
         ssr: {
@@ -524,6 +528,7 @@ function adexServerBuilder({ fonts, adapter }) {
         },
         appType: 'custom',
         plugins: [
+          preact(),
           preactPages({
             root: '/src/pages',
             id: '~routes',
@@ -612,6 +617,7 @@ function adexServerBuilder({ fonts, adapter }) {
             `
           ),
           addFontsPlugin(fonts),
+          islands && adexIslandsBuilder(),
         ],
         build: {
           outDir: serverOutDir,
