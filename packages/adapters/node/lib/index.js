@@ -75,8 +75,6 @@ function createHandler({ manifests, paths }) {
       return islandAssets(req, res, next)
     },
     async (req, res, next) => {
-      // @ts-expect-error shared-state between the middlewares
-      req.url = req.__originalUrl.replace(/(\/?client\/?)/, '/')
       return clientAssets(req, res, next)
     },
     async (req, res) => {
@@ -123,6 +121,22 @@ function manifestToHTML(manifest, filePath) {
   // if root manifest, also add it's css imports in
   if (manifest[rootServerFile]) {
     const graph = manifest[rootServerFile]
+    links = links.concat(
+      (graph.css || []).map(
+        d =>
+          `<link
+            rel="stylesheet"
+            href="/${d}"
+          />`
+      )
+    )
+  }
+
+  // TODO: move it up the chain
+  const rootClientFile = 'virtual:adex:client'
+  // if root manifest, also add it's css imports in
+  if (manifest[rootClientFile]) {
+    const graph = manifest[rootClientFile]
     links = links.concat(
       (graph.css || []).map(
         d =>

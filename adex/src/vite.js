@@ -61,80 +61,14 @@ export function adex({
       'virtual:adex:handler',
       readFileSync(join(__dirname, '../runtime/handler.js'), 'utf8')
     ),
-    createVirtualModule(
-      'virtual:adex:server',
-      `import { createServer } from '${adapterMap[adapter]}'
-      import { dirname, join } from 'node:path'
-      import { fileURLToPath } from 'node:url'
-      import { existsSync, readFileSync } from 'node:fs'
-      import { env } from 'adex/env'
-
-      import 'virtual:adex:font.css'
-      import 'virtual:adex:global.css'
-      
-      const __dirname = dirname(fileURLToPath(import.meta.url))
-
-      const PORT = parseInt(env.get('PORT', '3000'), 10)
-      const HOST = env.get('HOST', 'localhost')
-
-      const paths = {
-        assets: join(__dirname, './assets'),
-        islands: join(__dirname, './islands'),
-        client: join(__dirname, '../client'),
-      }
-      
-      function getServerManifest() {
-        const manifestPath = join(__dirname, 'manifest.json')
-        if (existsSync(manifestPath)) {
-          const manifestFile = readFileSync(manifestPath, 'utf8')
-          return parseManifest(manifestFile)
-        }
-        return {}
-      }
-      
-      function getClientManifest() {
-        const manifestPath = join(__dirname, '../client/manifest.json')
-        if (existsSync(manifestPath)) {
-          const manifestFile = readFileSync(manifestPath, 'utf8')
-          return parseManifest(manifestFile)
-        }
-        return {}
-      }
-
-      function parseManifest(manifestString) {
-        try {
-          const manifestJSON = JSON.parse(manifestString)
-          return manifestJSON
-        } catch (err) {
-          return {}
-        }
-      }
-
-      const server = createServer({
-        port: PORT,
-        host: HOST,
-        adex:{
-          manifests:{server:getServerManifest(),client:getClientManifest()},
-          paths,
-        }
-      })
-      
-      if ('run' in server) {
-        server.run()
-      }
-      
-      export default server.fetch
-      `
-    ),
-    addFontsPlugin(fonts),
+    // addFontsPlugin(fonts),
     adexDevServer({ islands }),
     adexBuildPrep({ islands }),
+    adexClientBuilder(),
 
-    !ssr && adexClientBuilder({ config: __clientConfig }),
-
-    // SSR Specific plugins
-    ssr && adexServerBuilder(),
-    ssr && !islands && adexClientSSRBuilder({ config: __clientConfig }),
+    // SSR/Render Server Specific plugins
+    ssr && adexServerBuilder({ fonts, adapter }),
+    // ssr && !islands && adexClientSSRBuilder({ config: __clientConfig }),
     ssr && islands && adexIslandsBuilder({ config: __clientConfig }),
 
     ...adexGuards(),
@@ -142,20 +76,24 @@ export function adex({
 }
 
 /**
- * @param {object} options
- * @param {import('vite').UserConfig} options.config
  * @returns {import("vite").Plugin}
  */
-function adexClientBuilder({ config }) {
+function adexClientBuilder() {
   return {
     name: 'adex-client-builder',
     config(cfg) {
       const out = cfg.build.outDir ?? 'dist'
       return {
+        appType: 'custom',
         build: {
+          manifest: 'manifest.json',
           outDir: join(out, 'client'),
           rollupOptions: {
             input: 'virtual:adex:client',
+          },
+          output: {
+            entryFileNames: '[name]-[hash].js',
+            format: 'esm',
           },
         },
       }
@@ -163,6 +101,7 @@ function adexClientBuilder({ config }) {
     generateBundle(opts, bundle) {
       let clientEntryPath
       for (const key in bundle) {
+        console.log({ key })
         if (bundle[key].name == '_virtual_adex_client') {
           clientEntryPath = key
         }
@@ -171,7 +110,7 @@ function adexClientBuilder({ config }) {
       const links = [
         ...(bundle[clientEntryPath]?.viteMetadata?.importedCss ?? new Set()),
       ].map(d => {
-        return `<link rel="stylesheet" href=${d} />`
+        return `<link rel="stylesheet" href="/${d}" />`
       })
 
       this.emitFile({
@@ -182,7 +121,7 @@ function adexClientBuilder({ config }) {
             ${links.join('\n')}
           </head>
           <div id="app"></div>
-          <script src="${clientEntryPath}" type="module"></script>
+          <script src="/${clientEntryPath}" type="module"></script>
         </html>`,
       })
     },
@@ -231,7 +170,7 @@ function adexIslandsBuilder(opts) {
       name: 'adex-islands',
       enforce: 'pre',
       config(d, e) {
-        outDir = d.build.outDir
+        outDir = d.build?.outDir ?? 'dist'
         isBuild = e.command === 'build'
       },
       transform(code, id, viteEnv) {
@@ -407,55 +346,67 @@ function adexClientSSRBuilder(opts) {
   return {
     name: 'adex-client',
     enforce: 'post',
+    config(conf) {
+      return {
+        appType: 'custom',
+        build: {
+          outDir: join(conf.build.outDir ?? 'dist', 'client'),
+          emptyOutDir: true,
+          ssr: false,
+          manifest: 'manifest.json',
+          rollupOptions: {
+            input: {
+              index: 'virtual:adex:client',
+            },
+            output: {
+              entryFileNames: '[name]-[hash].js',
+              format: 'esm',
+            },
+          },
+        },
+      }
+    },
     configResolved(config) {
       options = config
     },
     closeBundle() {
-      process.nextTick(async () => {
-        const usablePlugins = options.plugins
-          .filter(d => !d.name.startsWith('vite:'))
-          .filter(d => !d.name.startsWith('adex-') || d.name === 'adex-fonts')
-        await build(
-          mergeConfig(opts, {
-            configFile: false,
-            appType: 'custom',
-            base: '/client',
-            plugins: [
-              ...usablePlugins,
-              createVirtualModule(
-                'virtual:adex:client',
-                readFileSync(join(__dirname, '../runtime/client.js'), 'utf8')
-              ),
-              createUserDefaultVirtualModule(
-                'virtual:adex:index.html',
-                '',
-                'src/index.html'
-              ),
-              createUserDefaultVirtualModule(
-                'virtual:adex:global.css',
-                '',
-                'src/global.css'
-              ),
-              preact({ prefreshEnabled: false }),
-            ],
-            build: {
-              outDir: 'dist/client',
-              emptyOutDir: true,
-              ssr: false,
-              manifest: 'manifest.json',
-              rollupOptions: {
-                input: {
-                  index: 'virtual:adex:client',
-                },
-                output: {
-                  entryFileNames: '[name]-[hash].js',
-                  format: 'esm',
-                },
-              },
-            },
-          })
-        )
-      })
+      // process.nextTick(async () => {
+      //   const usablePlugins = options.plugins
+      //     .filter(d => !d.name.startsWith('vite:'))
+      //     .filter(d => !d.name.startsWith('adex-') || d.name === 'adex-fonts')
+      // await build(
+      //   mergeConfig(opts, {
+      //     plugins: [
+      // ...usablePlugins,
+      // createVirtualModule(
+      //   'virtual:adex:client',
+      //   readFileSync(join(__dirname, '../runtime/client.js'), 'utf8')
+      // ),
+      // createUserDefaultVirtualModule(
+      //   'virtual:adex:index.html',
+      //   '',
+      //   'src/index.html'
+      // ),
+      // preact({ prefreshEnabled: false }),
+      // ],
+      // build: {
+      //   outDir: 'dist/client',
+      //   emptyOutDir: true,
+      //   ssr: false,
+      //   manifest: 'manifest.json',
+      //   rollupOptions: {
+      //     input: {
+      //       index: 'virtual:adex:client',
+      //     },
+      //     output: {
+      //       entryFileNames: '[name]-[hash].js',
+      //       format: 'esm',
+      //     },
+      //   },
+      // },
+      // })
+      // )
+      // })
     },
   }
 }
@@ -539,29 +490,132 @@ function adexDevServer({ islands = false } = {}) {
 }
 
 /**
+ * @param {object} options
+ * @param {import("./fonts.js").Options} options.fonts
+ * * @param {string} options.adapter
  * @returns {import("vite").Plugin}
  */
-function adexServerBuilder() {
+function adexServerBuilder({ fonts, adapter }) {
   let input = 'src/entry-server.js'
+  let cfg
   return {
     name: `adex-server`,
     enforce: 'pre',
-    /**
-     * @returns {import("vite").UserConfig}
-     */
+    apply: 'build',
     config(conf, env) {
       if (env.command === 'build') {
         input = 'virtual:adex:server'
       }
-      return {
-        appType: 'custom',
+    },
+    configResolved(config) {
+      cfg = config
+    },
+    async generateBundle() {
+      const defOut = cfg.build?.outDir ?? 'dist'
+      const serverOutDir = defOut.endsWith('client')
+        ? join(dirname(defOut), 'server')
+        : join(defOut, 'server')
+
+      await build({
+        configFile: false,
         ssr: {
           external: ['preact', 'adex', 'preact-render-to-string'],
           noExternal: Object.values(adapterMap),
         },
+        appType: 'custom',
+        plugins: [
+          preactPages({
+            root: '/src/pages',
+            id: '~routes',
+          }),
+          preactPages({
+            root: '/src/api',
+            id: '~apiRoutes',
+            replacer: '/api',
+          }),
+          createUserDefaultVirtualModule(
+            'virtual:adex:global.css',
+            '',
+            'src/global.css'
+          ),
+          createVirtualModule(
+            'virtual:adex:client',
+            readFileSync(join(__dirname, '../runtime/client.js'), 'utf8')
+          ),
+          createVirtualModule(
+            'virtual:adex:handler',
+            readFileSync(join(__dirname, '../runtime/handler.js'), 'utf8')
+          ),
+          createVirtualModule(
+            'virtual:adex:server',
+            `import { createServer } from '${adapterMap[adapter]}'
+            import { dirname, join } from 'node:path'
+            import { fileURLToPath } from 'node:url'
+            import { existsSync, readFileSync } from 'node:fs'
+            import { env } from 'adex/env'
+      
+            import 'virtual:adex:font.css'
+            import 'virtual:adex:global.css'
+            
+            const __dirname = dirname(fileURLToPath(import.meta.url))
+      
+            const PORT = parseInt(env.get('PORT', '3000'), 10)
+            const HOST = env.get('HOST', 'localhost')
+      
+            const paths = {
+              assets: join(__dirname, './assets'),
+              islands: join(__dirname, './islands'),
+              client: join(__dirname, '../client'),
+            }
+            
+            function getServerManifest() {
+              const manifestPath = join(__dirname, 'manifest.json')
+              if (existsSync(manifestPath)) {
+                const manifestFile = readFileSync(manifestPath, 'utf8')
+                return parseManifest(manifestFile)
+              }
+              return {}
+            }
+            
+            function getClientManifest() {
+              const manifestPath = join(__dirname, '../client/manifest.json')
+              if (existsSync(manifestPath)) {
+                const manifestFile = readFileSync(manifestPath, 'utf8')
+                return parseManifest(manifestFile)
+              }
+              return {}
+            }
+      
+            function parseManifest(manifestString) {
+              try {
+                const manifestJSON = JSON.parse(manifestString)
+                return manifestJSON
+              } catch (err) {
+                return {}
+              }
+            }
+      
+            const server = createServer({
+              port: PORT,
+              host: HOST,
+              adex:{
+                manifests:{server:getServerManifest(),client:getClientManifest()},
+                paths,
+              }
+            })
+            
+            if ('run' in server) {
+              server.run()
+            }
+            
+            export default server.fetch
+            `
+          ),
+          addFontsPlugin(fonts),
+        ],
         build: {
-          outDir: join(conf.build?.outDir ?? 'dist', 'server'),
-          emptyOutDir: true,
+          outDir: serverOutDir,
+          emptyOutDir: false,
           assetsDir: 'assets',
           ssrEmitAssets: true,
           ssr: true,
@@ -574,7 +628,7 @@ function adexServerBuilder() {
             external: ['adex/ssr'],
           },
         },
-      }
+      })
     },
   }
 }

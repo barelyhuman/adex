@@ -1,7 +1,6 @@
 import { CONSTANTS, emitToHooked } from 'adex/hook'
 import { prepareRequest, prepareResponse } from 'adex/http'
 import { toStatic } from 'adex/ssr'
-import { LocationProvider, ErrorBoundary, Router } from 'adex/router'
 import { renderToString } from 'adex/utils/isomorphic'
 import { h } from 'preact'
 
@@ -21,7 +20,8 @@ export async function handler(req, res) {
   prepareRequest(req)
   prepareResponse(res)
 
-  const [baseURL] = req.url.split('?')
+  const [url, search] = req.url.split('?')
+  const baseURL = normalizeRequestUrl(url)
 
   const { metas, links, title, lang } = toStatic()
 
@@ -60,7 +60,9 @@ export async function handler(req, res) {
     // @ts-expect-error
     global.location = new URL(req.url, 'http://localhost')
 
-    const rendered = await renderToString(h(App, { url: req.url }))
+    const rendered = await renderToString(
+      h(App, { url: [baseURL, search].filter(Boolean).join('?') })
+    )
 
     const htmlString = HTMLTemplate({
       metas,
@@ -147,4 +149,8 @@ const stringify = (title, metas, links) => {
     ${stringifyTag('meta', metas)}
     ${stringifyTag('link', links)}
   `
+}
+
+function normalizeRequestUrl(url) {
+  return url.replace(/\/(index\.html)$/, '/')
 }

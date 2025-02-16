@@ -23,13 +23,14 @@ const withComponents = routes.map(d => {
 function ComponentWrapper({ url = '' }) {
   return h(
     LocationProvider,
+    //@ts-expect-error no types for non-jsx function
     { url: url },
     h(
       ErrorBoundary,
       {},
       h(
         Router,
-        { url: url },
+        {},
         withComponents.map(d =>
           h(Route, { path: d.routePath, component: d.component })
         )
