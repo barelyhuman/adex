@@ -53,6 +53,9 @@ importers:
       preact:
         specifier: ^10.22.0
         version: 10.24.2
+      preact-iso:
+        specifier: ^2.9.0
+        version: 2.9.0(preact-render-to-string@6.5.5(preact@10.24.2))(preact@10.24.2)
       preact-render-to-string:
         specifier: ^6.5.5
         version: 6.5.5(preact@10.24.2)
@@ -2206,6 +2209,12 @@ packages:
   postcss@8.4.47:
     resolution: {integrity: sha512-56rxCq7G/XfB4EkXq9Egn5GCqugWvDFjafDOThIdMBsI15iqPqR5r15TfSr1YPYeEI19YeaXMCbY6u88Y76GLQ==, tarball: https://registry.npmjs.org/postcss/-/postcss-8.4.47.tgz}
     engines: {node: ^10 || ^12 || >=14}
+
+  preact-iso@2.9.0:
+    resolution: {integrity: sha512-pJ3j4Aeqoe5MTGM96wB5JXaHbW3HB9PF5WxYJb//+pySc3hP1FoDIKwxi2OlLZtMW59gG8LvPwE8lUo1Ndk9ZA==, tarball: https://registry.npmjs.org/preact-iso/-/preact-iso-2.9.0.tgz}
+    peerDependencies:
+      preact: '>=10'
+      preact-render-to-string: '>=6.4.0'
 
   preact-render-to-string@6.5.5:
     resolution: {integrity: sha512-KiMFTKNTmT/ccE79BURR/r6XRc2I2TCTZ0MpeWqHW2XnllbeghXvwGsdAfF/MzMilUcTfODtSmMxgoRFL9TM5g==, tarball: https://registry.npmjs.org/preact-render-to-string/-/preact-render-to-string-6.5.5.tgz}
@@ -4994,6 +5003,11 @@ snapshots:
       nanoid: 3.3.8
       picocolors: 1.1.0
       source-map-js: 1.2.1
+
+  preact-iso@2.9.0(preact-render-to-string@6.5.5(preact@10.24.2))(preact@10.24.2):
+    dependencies:
+      preact: 10.24.2
+      preact-render-to-string: 6.5.5(preact@10.24.2)
 
   preact-render-to-string@6.5.5(preact@10.24.2):
     dependencies:

@@ -34,6 +34,7 @@ const adapterMap = {
 export function adex({
   fonts,
   islands = false,
+  ssr = true,
   adapter: adapter = 'node',
   __clientConfig = {},
 } = {}) {
@@ -51,6 +52,10 @@ export function adex({
       'virtual:adex:global.css',
       '',
       'src/global.css'
+    ),
+    createVirtualModule(
+      'virtual:adex:client',
+      readFileSync(join(__dirname, '../runtime/client.js'), 'utf8')
     ),
     createVirtualModule(
       'virtual:adex:handler',
@@ -121,17 +126,67 @@ export function adex({
       export default server.fetch
       `
     ),
-    createVirtualModule(
-      'virtual:adex:client',
-      readFileSync(join(__dirname, '../runtime/client.js'), 'utf8')
-    ),
     addFontsPlugin(fonts),
-    adexServerBuilder({ islands }),
+    adexDevServer({ islands }),
     adexBuildPrep({ islands }),
-    !islands && adexClientBuilder({ config: __clientConfig }),
-    islands && adexIslandsBuilder({ config: __clientConfig }),
+
+    !ssr && adexClientBuilder({ config: __clientConfig }),
+
+    // SSR Specific plugins
+    ssr && adexServerBuilder(),
+    ssr && !islands && adexClientSSRBuilder({ config: __clientConfig }),
+    ssr && islands && adexIslandsBuilder({ config: __clientConfig }),
+
     ...adexGuards(),
   ]
+}
+
+/**
+ * @param {object} options
+ * @param {import('vite').UserConfig} options.config
+ * @returns {import("vite").Plugin}
+ */
+function adexClientBuilder({ config }) {
+  return {
+    name: 'adex-client-builder',
+    config(cfg) {
+      const out = cfg.build.outDir ?? 'dist'
+      return {
+        build: {
+          outDir: join(out, 'client'),
+          rollupOptions: {
+            input: 'virtual:adex:client',
+          },
+        },
+      }
+    },
+    generateBundle(opts, bundle) {
+      let clientEntryPath
+      for (const key in bundle) {
+        if (bundle[key].name == '_virtual_adex_client') {
+          clientEntryPath = key
+        }
+      }
+
+      const links = [
+        ...(bundle[clientEntryPath]?.viteMetadata?.importedCss ?? new Set()),
+      ].map(d => {
+        return `<link rel="stylesheet" href=${d} />`
+      })
+
+      this.emitFile({
+        type: 'asset',
+        fileName: 'index.html',
+        source: `<html>
+          <head>
+            ${links.join('\n')}
+          </head>
+          <div id="app"></div>
+          <script src="${clientEntryPath}" type="module"></script>
+        </html>`,
+      })
+    },
+  }
 }
 
 /**
@@ -347,7 +402,7 @@ function createUserDefaultVirtualModule(id, content, userPath) {
  * @param {import('vite').UserConfig} options.config
  * @returns {import("vite").Plugin}
  */
-function adexClientBuilder(opts) {
+function adexClientSSRBuilder(opts) {
   let options
   return {
     name: 'adex-client',
@@ -408,43 +463,13 @@ function adexClientBuilder(opts) {
 /**
  * @returns {import("vite").Plugin}
  */
-function adexServerBuilder({ islands = false } = {}) {
-  let input = 'src/entry-server.js'
+function adexDevServer({ islands = false } = {}) {
   const devCSSMap = new Map()
   let cfg
   return {
-    name: `adex-server`,
+    name: adexDevServer.name,
+    apply: 'serve',
     enforce: 'pre',
-    /**
-     * @returns {import("vite").UserConfig}
-     */
-    config(conf, env) {
-      if (env.command === 'build') {
-        input = 'virtual:adex:server'
-      }
-      return {
-        appType: 'custom',
-        ssr: {
-          external: ['preact', 'adex', 'preact-render-to-string'],
-          noExternal: Object.values(adapterMap),
-        },
-        build: {
-          outDir: join(conf.build?.outDir ?? 'dist', 'server'),
-          emptyOutDir: true,
-          assetsDir: 'assets',
-          ssrEmitAssets: true,
-          ssr: true,
-          manifest: 'manifest.json',
-          ssrManifest: 'ssr.manifest.json',
-          rollupOptions: {
-            input: {
-              index: input,
-            },
-            external: ['adex/ssr'],
-          },
-        },
-      }
-    },
     configResolved(_cfg) {
       cfg = _cfg
     },
@@ -514,6 +539,47 @@ function adexServerBuilder({ islands = false } = {}) {
 }
 
 /**
+ * @returns {import("vite").Plugin}
+ */
+function adexServerBuilder() {
+  let input = 'src/entry-server.js'
+  return {
+    name: `adex-server`,
+    enforce: 'pre',
+    /**
+     * @returns {import("vite").UserConfig}
+     */
+    config(conf, env) {
+      if (env.command === 'build') {
+        input = 'virtual:adex:server'
+      }
+      return {
+        appType: 'custom',
+        ssr: {
+          external: ['preact', 'adex', 'preact-render-to-string'],
+          noExternal: Object.values(adapterMap),
+        },
+        build: {
+          outDir: join(conf.build?.outDir ?? 'dist', 'server'),
+          emptyOutDir: true,
+          assetsDir: 'assets',
+          ssrEmitAssets: true,
+          ssr: true,
+          manifest: 'manifest.json',
+          ssrManifest: 'ssr.manifest.json',
+          rollupOptions: {
+            input: {
+              index: input,
+            },
+            external: ['adex/ssr'],
+          },
+        },
+      }
+    },
+  }
+}
+
+/**
  * @returns {import("vite").Plugin[]}
  */
 function adexGuards() {
@@ -554,7 +620,9 @@ function adexGuards() {
               checkTree(d, [...importStack, importPath, d])
             )
         }
-        info.importers.forEach(i => checkTree(i))
+        if (info) {
+          info.importers.forEach(i => checkTree(i))
+        }
       },
     },
   ]
