@@ -49,7 +49,7 @@ export function fonts({ providers = [], families = [] } = {}) {
     },
     async transform(code, id) {
       const resolvedData = await this.resolve('virtual:adex:client')
-      if (id === resolvedData.id) {
+      if (resolvedData?.id == id) {
         return {
           code: `import "${fontVirtualId}";\n` + code,
         }
