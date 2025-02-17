@@ -2,6 +2,6 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   test: {
-    testTimeout: 40_000,
+    hookTimeout: 30_000,
   },
 })
