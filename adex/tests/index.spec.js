@@ -11,7 +11,9 @@ describe('ssr minimal', () => {
     const response = await fetch(devServerURL).then(d => d.text())
     expect(response).toMatchSnapshot()
 
-    const response2 = await fetch(new URL('/about', devServerURL)).then(d => d.text())
+    const response2 = await fetch(new URL('/about', devServerURL)).then(d =>
+      d.text()
+    )
     expect(response2).toMatchSnapshot()
   })
 })
