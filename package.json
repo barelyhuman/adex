@@ -8,7 +8,7 @@
   "author": "reaper<ahoy@barelyhuman.dev>",
   "scripts": {
     "play": "pnpm --filter='playground' -r dev",
-    "test": "echo 'true'",
+    "test": "pnpm -r test",
     "publish:ci": "lerna publish from-git --registry 'https://registry.npmjs.org' --yes",
     "next": "lerna version --sync-workspace-lock",
     "nuke": "pnpm -r exec rm -rvf  node_modules"
