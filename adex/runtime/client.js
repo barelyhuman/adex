@@ -1,20 +1,51 @@
-import { hydrate as preactHydrate, h } from 'preact'
+import { h } from 'preact'
+import {
+  LocationProvider,
+  Router,
+  Route,
+  lazy,
+  hydrate as preactHydrate,
+  ErrorBoundary,
+} from 'adex/router'
+
 import 'virtual:adex:global.css'
 
-const pageRoutes = import.meta.glob('/src/pages/**/*.{tsx,jsx,js}')
+// @ts-expect-error injected by vite
+import { routes } from '~routes'
 
-async function hydrate() {
-  const entryPage = document.getElementById('app').dataset.entryPage
-  const routeParams = document.getElementById('app').dataset.routeParams
-  const componentModule = await pageRoutes[entryPage]()
-  const Component =
-    'default' in componentModule ? componentModule.default : componentModule
-  preactHydrate(
-    h(Component, {
-      routeParams: routeParams ? JSON.parse(atob(routeParams)) : {},
-    }),
-    document.getElementById('app')
+const withComponents = routes.map(d => {
+  return {
+    ...d,
+    component: lazy(d.module),
+  }
+})
+
+function ComponentWrapper({ url = '' }) {
+  return h(
+    LocationProvider,
+    //@ts-expect-error no types for non-jsx function
+    { url: url },
+    h(
+      ErrorBoundary,
+      {},
+      h(
+        Router,
+        {},
+        withComponents.map(d =>
+          h(Route, { path: d.routePath, component: d.component })
+        )
+      )
+    )
   )
 }
 
-hydrate()
+export const App = ({ url = '' }) => {
+  return h(ComponentWrapper, { url })
+}
+
+async function hydrate() {
+  preactHydrate(h(ComponentWrapper, {}), document.getElementById('app'))
+}
+if (typeof window !== 'undefined') {
+  hydrate()
+}

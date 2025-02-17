@@ -1,7 +1,11 @@
 import { CONSTANTS, emitToHooked } from 'adex/hook'
 import { prepareRequest, prepareResponse } from 'adex/http'
-import { renderToString, toStatic } from 'adex/ssr'
+import { toStatic } from 'adex/ssr'
+import { renderToString } from 'adex/utils/isomorphic'
 import { h } from 'preact'
+
+// @ts-expect-error injected by vite
+import { App } from 'virtual:adex:client'
 
 // @ts-expect-error injected by vite
 import { routes as apiRoutes } from '~apiRoutes'
@@ -16,7 +20,8 @@ export async function handler(req, res) {
   prepareRequest(req)
   prepareResponse(res)
 
-  const [baseURL] = req.url.split('?')
+  const [url, search] = req.url.split('?')
+  const baseURL = normalizeRequestUrl(url)
 
   const { metas, links, title, lang } = toStatic()
 
@@ -50,9 +55,14 @@ export async function handler(req, res) {
   })
 
   if (matchedInPages) {
-    const module = await matchedInPages.module()
-    const render = 'default' in module ? module.default : module
     const routeParams = getRouteParams(baseURL, matchedInPages)
+
+    // @ts-expect-error
+    global.location = new URL(req.url, 'http://localhost')
+
+    const rendered = await renderToString(
+      h(App, { url: [baseURL, search].filter(Boolean).join('?') })
+    )
 
     const htmlString = HTMLTemplate({
       metas,
@@ -63,7 +73,7 @@ export async function handler(req, res) {
       routeParams: Buffer.from(JSON.stringify(routeParams), 'utf8').toString(
         'base64'
       ),
-      body: renderToString(h(render, { routeParams })),
+      body: rendered.html,
     })
     const modifiableContext = {
       req: req,
@@ -105,13 +115,7 @@ function HTMLTemplate({
         ${headString}
       </head>
       <body>
-        <div
-          id="app"
-          data-entry-page="${entryPage}"
-          data-route-params="${routeParams}"
-        >
-          ${body}
-        </div>
+        <div id="app">${body}</div>
       </body>
     </html>
   `
@@ -145,4 +149,8 @@ const stringify = (title, metas, links) => {
     ${stringifyTag('meta', metas)}
     ${stringifyTag('link', links)}
   `
+}
+
+function normalizeRequestUrl(url) {
+  return url.replace(/\/(index\.html)$/, '/')
 }

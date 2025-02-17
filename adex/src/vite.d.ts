@@ -7,6 +7,7 @@ export interface AdexOptions {
   fonts?: FontOptions
   islands?: boolean
   adapter?: Adapters
+  ssr?: boolean
   __clientConfig?: UserConfig
 }
 

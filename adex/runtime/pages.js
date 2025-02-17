@@ -1,4 +1,4 @@
-import { pathToRegex } from 'adex/ssr'
+import { pathToRegex } from 'adex/utils/isomorphic'
 
 const pages = import.meta.glob('#{__PLUGIN_PAGES_ROOT}')
 

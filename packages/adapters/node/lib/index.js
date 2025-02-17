@@ -5,6 +5,8 @@ import { sirv, useMiddleware } from 'adex/ssr'
 
 import { handler } from 'virtual:adex:handler'
 
+let islandMode = false
+
 function createHandler({ manifests, paths }) {
   const serverAssets = sirv(paths.assets, {
     maxAge: 31536000,
@@ -20,6 +22,7 @@ function createHandler({ manifests, paths }) {
   }
 
   if (islandsWereGenerated) {
+    islandMode = true
     islandAssets = sirv(paths.islands, {
       maxAge: 31536000,
       immutable: true,
@@ -75,8 +78,6 @@ function createHandler({ manifests, paths }) {
       return islandAssets(req, res, next)
     },
     async (req, res, next) => {
-      // @ts-expect-error shared-state between the middlewares
-      req.url = req.__originalUrl.replace(/(\/?client\/?)/, '/')
       return clientAssets(req, res, next)
     },
     async (req, res) => {
@@ -123,6 +124,22 @@ function manifestToHTML(manifest, filePath) {
   // if root manifest, also add it's css imports in
   if (manifest[rootServerFile]) {
     const graph = manifest[rootServerFile]
+    links = links.concat(
+      (graph.css || []).map(
+        d =>
+          `<link
+            rel="stylesheet"
+            href="/${d}"
+          />`
+      )
+    )
+  }
+
+  // TODO: move it up the chain
+  const rootClientFile = 'virtual:adex:client'
+  // if root manifest, also add it's css imports in
+  if (!islandMode && manifest[rootClientFile]) {
+    const graph = manifest[rootClientFile]
     links = links.concat(
       (graph.css || []).map(
         d =>

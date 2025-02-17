@@ -1,6 +1,5 @@
-export { renderToString } from 'preact-render-to-string'
+export { prerender as renderToString } from 'preact-iso'
 export { default as sirv } from 'sirv'
 export { default as mri } from 'mri'
-export { parse as pathToRegex } from 'regexparam'
 export { toStatic } from 'hoofd/preact'
 export { use as useMiddleware } from '@barelyhuman/tiny-use'

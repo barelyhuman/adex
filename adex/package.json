@@ -17,6 +17,14 @@
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
+    "./router": {
+      "types": "./src/router.d.ts",
+      "import": "./src/router.js"
+    },
+    "./utils/isomorphic": {
+      "types": "./src/utils/isomorphic.d.ts",
+      "import": "./src/utils/isomorphic.js"
+    },
     "./ssr": {
       "types": "./src/ssr.d.ts",
       "import": "./src/ssr.js"
@@ -61,6 +69,7 @@
     "hoofd": "^1.7.1",
     "mri": "^1.2.0",
     "node-stream-zip": "^1.15.0",
+    "preact-iso": "^2.9.0",
     "preact-render-to-string": "^6.5.5",
     "regexparam": "^3.0.0",
     "sirv": "^2.0.4",

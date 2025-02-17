@@ -8,6 +8,7 @@ export default defineConfig({
   plugins: [
     adex({
       islands: false,
+      ssr: false,
       fonts: {
         providers: [providers.google()],
         families: [
