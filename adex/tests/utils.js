@@ -41,6 +41,8 @@ function waitForServerStart(devServerProc) {
           serverReady = true
         }
 
+        console.log(stdout)
+
         if (stdout.match(/localhost:(\d+)/) != null) {
           const matchedPort = stdout.match(/localhost:(\d+)/)
           devServerURL.port = matchedPort[1]
@@ -71,8 +73,8 @@ function waitForServerStart(devServerProc) {
 }
 
 /**
-* @param {string} fixturePath
-*/
+ * @param {string} fixturePath
+ */
 export async function launchDemoDevServer(fixturePath) {
   console.log(`launching on ${dir(fixturePath)}`)
   /** @type {import('node:child_process').ChildProcess} */
