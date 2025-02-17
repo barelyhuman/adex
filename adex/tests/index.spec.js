@@ -1,19 +1,24 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { snapshot } from '@barelyhuman/node-snapshot'
+import { after, before, describe, it } from 'node:test'
 
 import { devServerURL, launchDemoDevServer } from './utils.js'
 
-describe('ssr minimal', () => {
-  beforeAll(async () => {
-    await launchDemoDevServer('tests/fixtures/minimal')
+describe('ssr minimal', async () => {
+  let devServerProc
+  before(async () => {
+    devServerProc = await launchDemoDevServer('tests/fixtures/minimal')
+  })
+  after(async () => {
+    devServerProc.kill()
   })
 
-  it('basic response', async () => {
+  await it('basic response', async ctx => {
     const response = await fetch(devServerURL).then(d => d.text())
-    expect(response).toMatchSnapshot()
+    snapshot(ctx, response)
 
     const response2 = await fetch(new URL('/about', devServerURL)).then(d =>
       d.text()
     )
-    expect(response2).toMatchSnapshot()
+    snapshot(ctx, response2)
   })
 })

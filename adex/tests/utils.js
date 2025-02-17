@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { stripColors } from 'kolorist'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export const dir = (...args) => path.join(__dirname, '..', ...args)
@@ -37,14 +38,14 @@ function waitForServerStart(devServerProc) {
 
         stdout += data
 
-        if (stdout.match(/ready\sin\s[0-9]+\sms/g) != null) {
+        const matchableStdout = stripColors(stdout)
+
+        if (matchableStdout.match(/ready\sin\s[0-9]+\sms/g) != null) {
           serverReady = true
         }
 
-        console.log(stdout)
-
-        if (stdout.match(/localhost:(\d+)/) != null) {
-          const matchedPort = stdout.match(/localhost:(\d+)/)
+        if (matchableStdout.match(/localhost:(\d+)/) != null) {
+          const matchedPort = matchableStdout.match(/localhost:(\d+)/)
           devServerURL.port = matchedPort[1]
           if (serverReady) {
             cleanup()
