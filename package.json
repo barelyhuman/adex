@@ -9,6 +9,7 @@
   "scripts": {
     "play": "pnpm --filter='playground' -r dev",
     "test": "pnpm -r test",
+    "test:ci": "pnpm -r test:ci",
     "publish:ci": "lerna publish from-git --registry 'https://registry.npmjs.org' --yes",
     "next": "lerna version --sync-workspace-lock",
     "nuke": "pnpm -r exec rm -rvf  node_modules"

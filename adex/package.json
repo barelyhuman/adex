@@ -60,7 +60,8 @@
   ],
   "scripts": {
     "next": "bumpp",
-    "test": "vitest"
+    "test": "vitest",
+    "test:ci":"vitest --run"
   },
   "dependencies": {
     "@barelyhuman/tiny-use": "^0.0.2",

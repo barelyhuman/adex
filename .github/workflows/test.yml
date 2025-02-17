@@ -25,4 +25,4 @@ jobs:
           pnpm i --frozen-lockfile
 
       - name: Test
-        run: pnpm -r test
+        run: cd adex; pnpm test:ci
