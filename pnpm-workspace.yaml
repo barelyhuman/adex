@@ -3,3 +3,8 @@ packages:
   - create-adex
   - playground
   - packages/**/*
+  - adex/tests/**/*
+
+catalog:
+  "preact": 10.24.2
+  "@preact/preset-vite": 2.9.1

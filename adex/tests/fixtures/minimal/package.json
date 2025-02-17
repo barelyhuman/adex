@@ -1,0 +1,14 @@
+{
+  "name": "minimal",
+  "type": "module",
+  "dependencies": {
+    "adex": "workspace:*",
+    "preact": "catalog:",
+    "@preact/preset-vite": "catalog:"
+  },
+  
+    "devDependencies": {
+      "vite": "^5.4.8"
+    }
+  
+}

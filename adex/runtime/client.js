@@ -13,13 +13,6 @@ import 'virtual:adex:global.css'
 // @ts-expect-error injected by vite
 import { routes } from '~routes'
 
-const withComponents = routes.map(d => {
-  return {
-    ...d,
-    component: lazy(d.module),
-  }
-})
-
 function ComponentWrapper({ url = '' }) {
   return h(
     LocationProvider,
@@ -31,8 +24,8 @@ function ComponentWrapper({ url = '' }) {
       h(
         Router,
         {},
-        withComponents.map(d =>
-          h(Route, { path: d.routePath, component: d.component })
+        routes.map(d =>
+          h(Route, { path: d.routePath, component: lazy(d.module) })
         )
       )
     )
@@ -46,6 +39,7 @@ export const App = ({ url = '' }) => {
 async function hydrate() {
   preactHydrate(h(ComponentWrapper, {}), document.getElementById('app'))
 }
+
 if (typeof window !== 'undefined') {
   hydrate()
 }

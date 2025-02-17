@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ssr minimal > basic response 1`] = `
+"
+    <!doctype html>
+    <html lang="">
+      <head>
+        <script type="module" src="/@vite/client"></script>
+
+        <meta charset="UTF-8" />
+        
+    <title></title>
+
+    
+    
+  
+      </head>
+      <body>
+        <div id="app"><h1>Hello World</h1></div>
+      <script type='module' src="/virtual:adex:client"></script></body>
+    </html>
+  "
+`;
