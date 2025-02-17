@@ -10,5 +10,8 @@ describe('ssr minimal', () => {
   it('basic response', async () => {
     const response = await fetch(devServerURL).then(d => d.text())
     expect(response).toMatchSnapshot()
+
+    const response = await fetch(new URL('/about', devServerURL)).then(d => d.text())
+    expect(response).toMatchSnapshot()
   })
 })
