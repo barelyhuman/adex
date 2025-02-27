@@ -134,7 +134,6 @@ export function adex({
 
     // SSR/Render Server Specific plugins
     ssr && adexServerBuilder({ fonts, adapter, islands }),
-    ...adexGuards(),
   ]
 }
 
