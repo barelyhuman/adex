@@ -1,7 +1,7 @@
 import { CONSTANTS, emitToHooked } from 'adex/hook'
 import { prepareRequest, prepareResponse } from 'adex/http'
 import { toStatic } from 'adex/ssr'
-import { renderToString } from 'adex/utils/isomorphic'
+import { renderToStringAsync } from 'adex/utils/isomorphic'
 import { h } from 'preact'
 
 // @ts-expect-error injected by vite
@@ -60,9 +60,7 @@ export async function handler(req, res) {
     // @ts-expect-error
     global.location = new URL(req.url, 'http://localhost')
 
-    const rendered = await renderToString(
-      h(App, { url: [baseURL, search].filter(Boolean).join('?') })
-    )
+    const rendered = await renderToStringAsync(h(App, { url: req.url }), {})
 
     const htmlString = HTMLTemplate({
       metas,
@@ -73,7 +71,7 @@ export async function handler(req, res) {
       routeParams: Buffer.from(JSON.stringify(routeParams), 'utf8').toString(
         'base64'
       ),
-      body: rendered.html,
+      body: rendered,
     })
     const modifiableContext = {
       req: req,

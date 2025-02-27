@@ -14,14 +14,15 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: '18.x'
+          node-version: '20'
           corepack-enable: true
           registry-url: 'https://registry.npmjs.org'
 
       - name: Deps
         run: |
+          npm i -g corepack@latest
           corepack enable 
           pnpm i --frozen-lockfile
 
       - name: Test
-        run: pnpm -r test
+        run: pnpm test:ci
