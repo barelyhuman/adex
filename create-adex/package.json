@@ -1,6 +1,6 @@
 {
   "name": "create-adex",
-  "version": "0.0.17",
+  "version": "",
   "bin": {
     "create-adex": "./cli.mjs"
   },
