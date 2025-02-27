@@ -1,7 +1,7 @@
 {
   "name": "playground",
   "private": true,
-  "version": "",
+  "version": "0.0.18-alpha.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
