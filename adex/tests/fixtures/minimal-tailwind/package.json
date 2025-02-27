@@ -1,6 +1,8 @@
 {
   "name": "minimal-tailwind",
   "type": "module",
+  "private": true,
+  "version": "0.0.0",
   "dependencies": {
     "@preact/preset-vite": "catalog:",
     "adex": "workspace:*",
