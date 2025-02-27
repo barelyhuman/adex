@@ -241,7 +241,7 @@ function adexIslandsBuilder() {
         // if being imported by the client, don't send
         // back the transformed server code, send the
         // original component
-        if (!viteEnv.ssr) return
+        if (!viteEnv?.ssr) return
 
         const islands = findIslands(readSourceFile(id), {
           isFunctionIsland: node =>
