@@ -84,6 +84,9 @@ importers:
       '@barelyhuman/node-snapshot':
         specifier: ^0.0.4
         version: 0.0.4
+      '@matteo.collina/snap':
+        specifier: ^0.3.0
+        version: 0.3.0
       '@preact/preset-vite':
         specifier: ^2.8.2
         version: 2.9.1(@babel/core@7.24.7)(preact@10.24.2)(vite@5.4.8(@types/node@20.16.10)(lightningcss@1.25.1))
@@ -607,6 +610,9 @@ packages:
   '@lerna-lite/version@3.7.1':
     resolution: {integrity: sha512-C4CycUp4rgdTGtWYGoa+Ci8EZUsO7b0sAl8Vsdwzjk3g2FRD8d62tpD5Q6drthUQrWRKWpg62rY3q+H+7CGSPg==, tarball: https://registry.npmjs.org/@lerna-lite/version/-/version-3.7.1.tgz}
     engines: {node: ^18.0.0 || >=20.0.0}
+
+  '@matteo.collina/snap@0.3.0':
+    resolution: {integrity: sha512-CtoSZVegbLSMOoDjy+5TCZFY6juqSpc7P7slP5hx5jTu28ncvouAf1QrBqeLuPimIonU+ekbtkNNOlIl/a6GFw==, tarball: https://registry.npmjs.org/@matteo.collina/snap/-/snap-0.3.0.tgz}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==, tarball: https://registry.npmjs.org/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz}
@@ -1441,6 +1447,10 @@ packages:
   find-up@6.3.0:
     resolution: {integrity: sha512-v2ZsoEuVHYy8ZIlYqwPe/39Cy+cFDzp4dXPaxNvkEuouymu+2Jbz0PxpKarJHYJTmv2HWT3O382qY8l4jMWthw==, tarball: https://registry.npmjs.org/find-up/-/find-up-6.3.0.tgz}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+
+  find-up@7.0.0:
+    resolution: {integrity: sha512-YyZM99iHrqLKjmt4LJDj58KI+fYyufRLBSYcqycxf//KpBk9FoewoGX0450m9nB44qrZnovzC2oeP5hUibxc/g==, tarball: https://registry.npmjs.org/find-up/-/find-up-7.0.0.tgz}
+    engines: {node: '>=18'}
 
   foreground-child@3.2.1:
     resolution: {integrity: sha512-PXUUyLqrR2XCWICfv6ukppP96sdFwWbNEnfEMt7jNsISjMsvaLNinAHNDYyvkyU+SZG2BTSbT5NjG+vZslfGTA==, tarball: https://registry.npmjs.org/foreground-child/-/foreground-child-3.2.1.tgz}
@@ -3417,6 +3427,11 @@ snapshots:
       - supports-color
       - typescript
 
+  '@matteo.collina/snap@0.3.0':
+    dependencies:
+      find-up: 7.0.0
+      slash: 5.1.0
+
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -4316,6 +4331,12 @@ snapshots:
     dependencies:
       locate-path: 7.2.0
       path-exists: 5.0.0
+
+  find-up@7.0.0:
+    dependencies:
+      locate-path: 7.2.0
+      path-exists: 5.0.0
+      unicorn-magic: 0.1.0
 
   foreground-child@3.2.1:
     dependencies:

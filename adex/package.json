@@ -78,7 +78,7 @@
     "unifont": "^0.0.2"
   },
   "devDependencies": {
-    "@barelyhuman/node-snapshot": "^0.0.4",
+    "@matteo.collina/snap": "^0.3.0",
     "@preact/preset-vite": "^2.8.2",
     "@types/node": "^20.14.10",
     "adex-adapter-node": "^0.0.17",
