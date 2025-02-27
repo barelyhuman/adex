@@ -125,6 +125,28 @@ importers:
         specifier: ^5.4.8
         version: 5.4.8(@types/node@20.16.10)(lightningcss@1.25.1)
 
+  adex/tests/fixtures/minimal-tailwind:
+    dependencies:
+      '@preact/preset-vite':
+        specifier: 'catalog:'
+        version: 2.9.1(@babel/core@7.24.7)(preact@10.24.2)(vite@5.4.8(@types/node@20.16.10)(lightningcss@1.25.1))
+      adex:
+        specifier: workspace:*
+        version: link:../../..
+      preact:
+        specifier: 'catalog:'
+        version: 10.24.2
+    devDependencies:
+      autoprefixer:
+        specifier: ^10.4.20
+        version: 10.4.20(postcss@8.4.47)
+      tailwindcss:
+        specifier: ^3
+        version: 3.4.13
+      vite:
+        specifier: ^5.4.8
+        version: 5.4.8(@types/node@20.16.10)(lightningcss@1.25.1)
+
   create-adex:
     dependencies:
       kleur:
