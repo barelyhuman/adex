@@ -60,7 +60,7 @@
   ],
   "scripts": {
     "next": "bumpp",
-    "test": "glob -c 'node --test' tests/**/*.spec.js"
+    "test": "glob -c 'node --test --test-reporter=spec' tests/**/*.spec.js"
   },
   "dependencies": {
     "@barelyhuman/tiny-use": "^0.0.2",
