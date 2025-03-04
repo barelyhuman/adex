@@ -63,6 +63,7 @@
     "test": "glob -c 'node --test --test-reporter=spec' tests/**/*.spec.js"
   },
   "dependencies": {
+    
     "@barelyhuman/tiny-use": "^0.0.2",
     "@dumbjs/preland": "^0.0.2",
     "bumpp": "^9.4.1",
@@ -78,7 +79,7 @@
     "unifont": "^0.0.2"
   },
   "devDependencies": {
-    "@matteo.collina/snap": "^0.3.0",
+    "@barelyhuman/node-snapshot": "^1.0.2",
     "@preact/preset-vite": "^2.8.2",
     "@types/node": "^20.14.10",
     "adex-adapter-node": "^0.0.17",
