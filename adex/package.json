@@ -1,6 +1,6 @@
 {
   "name": "adex",
-  "version": "0.0.18-alpha.1",
+  "version": "0.0.18-alpha.3",
   "description": "An easier way to build apps with Vite and Preact",
   "keywords": [
     "adex",
@@ -63,7 +63,6 @@
     "test": "glob -c 'node --test --test-reporter=spec' tests/**/*.spec.js"
   },
   "dependencies": {
-    
     "@barelyhuman/tiny-use": "^0.0.2",
     "@dumbjs/preland": "^0.0.2",
     "bumpp": "^9.4.1",
