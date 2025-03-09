@@ -55,4 +55,8 @@ export function prepareResponse(res) {
     res.write(str)
     res.end()
   }
+  res.redirect = (url, statusCode = 302) => {
+    res.statusCode = statusCode
+    res.setHeader('Location', url)
+  }
 }
