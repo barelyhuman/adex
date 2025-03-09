@@ -590,6 +590,7 @@ function adexServerBuilder({ fonts, adapter, islands }) {
           external: ['preact', 'adex', 'preact-render-to-string'],
           noExternal: Object.values(adapterMap),
         },
+        resolve: cfg.resolve,
         appType: 'custom',
         plugins: [
           preact(),
