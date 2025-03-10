@@ -5,4 +5,6 @@ export {
   Route,
   lazy,
   LocationProvider,
+  useLocation,
+  useRoute,
 } from 'preact-iso'

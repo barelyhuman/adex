@@ -5,4 +5,6 @@ export {
   lazy,
   LocationProvider,
   ErrorBoundary,
+  useLocation,
+  useRoute,
 } from 'preact-iso'
