@@ -130,7 +130,7 @@ export function adex({
     addFontsPlugin(fonts),
     adexDevServer({ islands }),
     adexBuildPrep({ islands }),
-    adexClientBuilder({ islands }),
+    adexClientBuilder({ ssr, islands }),
     adexIslandsBuilder(),
 
     // SSR/Render Server Specific plugins
@@ -141,7 +141,7 @@ export function adex({
 /**
  * @returns {import("vite").Plugin}
  */
-function adexClientBuilder({ islands = false } = {}) {
+function adexClientBuilder({ ssr = true, islands = false } = {}) {
   return {
     name: 'adex-client-builder',
     config(cfg) {
@@ -181,17 +181,21 @@ function adexClientBuilder({ islands = false } = {}) {
         return `<link rel="stylesheet" href="/${d}" />`
       })
 
-      this.emitFile({
-        type: 'asset',
-        fileName: 'index.html',
-        source: `<html>
-          <head>
-            ${links.join('\n')}
-          </head>
-          <div id="app"></div>
-          <script src="/${clientEntryPath}" type="module"></script>
-        </html>`,
-      })
+      if (!ssr) {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'index.html',
+          source: `<html>
+            <head>
+              ${links.join('\n')}
+            </head>
+            <body>
+              <div id="app"></div>
+              <script src="/${clientEntryPath}" type="module"></script>
+            </body>
+          </html>`,
+        })
+      }
     },
   }
 }
