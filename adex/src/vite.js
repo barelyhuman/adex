@@ -165,7 +165,11 @@ function adexClientBuilder({ islands = false } = {}) {
     generateBundle(opts, bundle) {
       let clientEntryPath
       for (const key in bundle) {
-        if (bundle[key].name == '_virtual_adex_client') {
+        if (
+          ['_virtual_adex_client', '_app'].includes(bundle[key].name) &&
+          'isEntry' in bundle[key] &&
+          bundle[key].isEntry
+        ) {
           clientEntryPath = key
         }
       }
