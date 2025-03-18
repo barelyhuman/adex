@@ -131,7 +131,7 @@ export function adex({
     adexDevServer({ islands }),
     adexBuildPrep({ islands }),
     adexClientBuilder({ ssr, islands }),
-    adexIslandsBuilder(),
+    islands && adexIslandsBuilder(),
 
     // SSR/Render Server Specific plugins
     ssr && adexServerBuilder({ fonts, adapter, islands }),
