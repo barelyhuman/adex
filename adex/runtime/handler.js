@@ -35,6 +35,7 @@ export async function handler(req, res) {
       req.params = routeParams
       const modifiableContext = {
         req: req,
+        res: res,
       }
       await emitToHooked(CONSTANTS.apiCall, modifiableContext)
       return {
@@ -76,6 +77,7 @@ export async function handler(req, res) {
     const modifiableContext = {
       req: req,
       html: htmlString,
+      res: res,
     }
     await emitToHooked(CONSTANTS.pageRender, modifiableContext)
     return {

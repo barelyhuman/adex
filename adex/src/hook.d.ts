@@ -1,12 +1,14 @@
-import { IncomingMessage } from 'node:http'
+import { IncomingMessage, ServerResponse } from 'adex/http'
 
 export type Context = {
   req: IncomingMessage
   html: string
+  res: ServerResponse
 }
 
 export type APIContext = {
   req: IncomingMessage
+  res: ServerResponse
 }
 
 export declare const CONSTANTS: {
