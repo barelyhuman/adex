@@ -32,6 +32,10 @@ export function prepareRequest(req) {
  * @param {import("./http.js").ServerResponse} res
  */
 export function prepareResponse(res) {
+  res.status = function (code) {
+    res.statusCode = code
+    return this
+  }
   res.html = data => {
     if (typeof data !== 'string') {
       throw new Error('[res.html] only accepts html string')

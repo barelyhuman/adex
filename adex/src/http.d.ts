@@ -11,6 +11,7 @@ export type ServerResponse = HTTPServerResponse & {
   html: (data: string) => void
   json: (data: any) => void
   text: (data: string) => void
+  status: (code: number) => ServerResponse
   redirect: (url: string, statusCode: number) => void
 }
 
