@@ -16,6 +16,28 @@ const baseURL = import.meta.env.BASE_URL ?? '/'
 
 const normalizeURLPath = url => (url ? join(baseURL, url) : undefined)
 
+const removeBaseURL = url => {
+  if (typeof url !== 'string') {
+    return undefined
+  }
+
+  if (url.startsWith(baseURL)) {
+    const result = url.slice(baseURL.length)
+    return result === '' ? '/' : result
+  }
+
+  const baseURLWithoutSlash = baseURL.endsWith('/')
+    ? baseURL.slice(0, -1)
+    : baseURL
+
+  if (url.startsWith(baseURLWithoutSlash)) {
+    const result = url.slice(baseURLWithoutSlash.length)
+    return result === '' ? '/' : result
+  }
+
+  return undefined
+}
+
 // @ts-expect-error injected by vite
 import { routes } from '~routes'
 
@@ -60,6 +82,8 @@ export const prerender = async ({ url }) => {
 
   return {
     html,
-    links: new Set([...(discoveredLinks ?? [])]),
+    links: new Set(
+      [...discoveredLinks].map(d => removeBaseURL(d)).filter(Boolean)
+    ),
   }
 }
