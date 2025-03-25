@@ -142,6 +142,7 @@ export function adex({
  * @returns {import("vite").Plugin}
  */
 function adexClientBuilder({ ssr = true, islands = false } = {}) {
+  let baseUrl = '/'
   return {
     name: 'adex-client-builder',
     config(cfg) {
@@ -162,6 +163,10 @@ function adexClientBuilder({ ssr = true, islands = false } = {}) {
         },
       }
     },
+    configResolved(cfg) {
+      baseUrl = cfg.base
+      return
+    },
     generateBundle(opts, bundle) {
       let clientEntryPath
       for (const key in bundle) {
@@ -178,7 +183,7 @@ function adexClientBuilder({ ssr = true, islands = false } = {}) {
         // @ts-expect-error invalid types by vite? figure this out
         ...(bundle[clientEntryPath]?.viteMetadata?.importedCss ?? new Set()),
       ].map(d => {
-        return `<link rel="stylesheet" href="/${d}" />`
+        return `<link rel="stylesheet" href="${join(baseUrl, d)}" />`
       })
 
       if (!ssr) {
@@ -191,7 +196,7 @@ function adexClientBuilder({ ssr = true, islands = false } = {}) {
             </head>
             <body>
               <div id="app"></div>
-              <script src="/${clientEntryPath}" type="module"></script>
+              <script src="${join(baseUrl, clientEntryPath)}" type="module"></script>
             </body>
           </html>`,
         })

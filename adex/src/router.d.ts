@@ -7,4 +7,7 @@ export {
   ErrorBoundary,
   useLocation,
   useRoute,
+  prerender,
 } from 'preact-iso'
+
+export declare const join: (...args: string[]) => string

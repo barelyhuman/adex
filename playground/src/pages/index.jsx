@@ -14,6 +14,7 @@ export default function Page() {
         <a href="https://preactjs.com" target="_blank">
           <img src={'/vite.svg'} class="logo preact" alt="Preact logo" />
         </a>
+        <a href="/about">About</a>
       </div>
       <h1>Vite + Preact</h1>
       <div class="card">
