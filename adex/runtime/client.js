@@ -6,9 +6,15 @@ import {
   lazy,
   hydrate as preactHydrate,
   ErrorBoundary,
+  join,
+  prerender as ssr,
 } from 'adex/router'
 
 import 'virtual:adex:global.css'
+
+const baseURL = import.meta.env.BASE_URL ?? '/'
+
+const normalizeURLPath = url => (url ? join(baseURL, url) : undefined)
 
 // @ts-expect-error injected by vite
 import { routes } from '~routes'
@@ -17,16 +23,19 @@ function ComponentWrapper({ url = '' }) {
   return h(
     LocationProvider,
     //@ts-expect-error no types for non-jsx function
-    { url: url },
+    { url: normalizeURLPath(url) },
     h(
       ErrorBoundary,
       {},
       h(
         Router,
         {},
-        routes.map(d =>
-          h(Route, { path: d.routePath, component: lazy(d.module) })
-        )
+        routes.map(d => {
+          return h(Route, {
+            path: normalizeURLPath(d.routePath),
+            component: lazy(d.module),
+          })
+        })
       )
     )
   )
@@ -42,4 +51,15 @@ async function hydrate() {
 
 if (typeof window !== 'undefined') {
   hydrate()
+}
+
+export const prerender = async ({ url }) => {
+  const { html, links: discoveredLinks } = await ssr(
+    h(ComponentWrapper, { url: url })
+  )
+
+  return {
+    html,
+    links: new Set([...(discoveredLinks ?? [])]),
+  }
 }

@@ -7,7 +7,7 @@ export const routes = normalizeRouteImports(pages, [
   '#{__PLUGIN_PAGES_ROOT_REGEX_REPLACER}',
 ])
 
-// taken from
+// major bits taken from
 // https://github.com/cyco130/smf/blob/c4b601f48cd3b3b71bea6d76b52b9a85800813e4/smf/shared.ts#L22
 // as it's decently tested and aligns to what we want for our routing
 function compareRoutePatterns(a, b) {
