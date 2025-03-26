@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/@lerna-lite/cli/schemas/lerna-schema.json",
-  "version": "0.0.18-alpha.6",
+  "version": "0.0.18",
   "changelogPreset": "angular",
   "npmClient": "pnpm",
   "packages": [
