@@ -135,7 +135,7 @@ function regexToParams(matchedRoute, regexMatchGroup) {
 const stringify = (title, metas, links) => {
   const stringifyTag = (tagName, tags) =>
     tags.reduce((acc, tag) => {
-      ;`${acc}<${tagName}${Object.keys(tag).reduce(
+      return `${acc}<${tagName}${Object.keys(tag).reduce(
         (properties, key) => `${properties} ${key}="${tag[key]}"`,
         ''
       )}>`
