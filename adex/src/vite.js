@@ -536,11 +536,9 @@ function adexDevServer({ islands = false } = {}) {
             let renderedHTML = html.replace(
               '</head>',
               `
-              <script type="module">
-                import "virtual:adex:global.css"
-              </script>
+              <link rel="preload" href="/virtual:adex:global.css" as="style" onload="this.rel='stylesheet'" />
               ${cssLinks.map(d => {
-                return `<link rel="stylesheet" href="${d}">`
+                return `<link rel="preload" href="/${d}" as="style" onload="this.rel='stylesheet'"/>`
               })}
               </head>
             `

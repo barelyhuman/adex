@@ -21,6 +21,10 @@
       "types": "./src/router.d.ts",
       "import": "./src/router.js"
     },
+    "./app": {
+      "types": "./src/app.d.ts",
+      "import": "./src/app.js"
+    },
     "./utils/isomorphic": {
       "types": "./src/utils/isomorphic.d.ts",
       "import": "./src/utils/isomorphic.js"
