@@ -29,15 +29,15 @@ const adapterMap = {
 
 /**
  * @param {import("./vite.js").AdexOptions} [options]
- * @returns
+ * @returns {(import("vite").Plugin)[]}
  */
 export function adex({
   fonts,
   islands = false,
   ssr = true,
   adapter: adapter = 'node',
-  __clientConfig = {},
 } = {}) {
+  // @ts-expect-error probably because of the `.filter`
   return [
     preactPages({
       root: '/src/pages',
@@ -135,7 +135,7 @@ export function adex({
 
     // SSR/Render Server Specific plugins
     ssr && adexServerBuilder({ fonts, adapter, islands }),
-  ]
+  ].filter(Boolean)
 }
 
 /**
@@ -210,7 +210,7 @@ function adexClientBuilder({ ssr = true, islands = false } = {}) {
  */
 function adexBuildPrep({ islands = false }) {
   return {
-    name: 'remover',
+    name: 'adex-build-prep',
     apply: 'build',
     async configResolved(config) {
       if (!islands) return
@@ -497,7 +497,7 @@ function adexDevServer({ islands = false } = {}) {
   const devCSSMap = new Map()
   let cfg
   return {
-    name: adexDevServer.name,
+    name: 'adex-dev-server',
     apply: 'serve',
     enforce: 'pre',
     configResolved(_cfg) {
@@ -595,6 +595,10 @@ function adexServerBuilder({ fonts, adapter, islands }) {
         : join(defOut, 'server')
 
       console.log(`\nBuilding Server: ${serverOutDir}\n`)
+
+      const sanitizedPlugins = (cfg.plugins ?? [])
+        .filter(d => !d.name.startsWith('vite:'))
+        .filter(d => !d.name.startsWith('adex-'))
 
       await build({
         configFile: false,
@@ -696,6 +700,7 @@ function adexServerBuilder({ fonts, adapter, islands }) {
           ),
           addFontsPlugin(fonts),
           islands && adexIslandsBuilder(),
+          ...sanitizedPlugins,
         ],
         build: {
           outDir: serverOutDir,
@@ -776,7 +781,7 @@ function preactPages({
   replacer = '',
 } = {}) {
   return {
-    name: 'routes',
+    name: 'adex-routes',
     enforce: 'pre',
     resolveId(id) {
       if (id !== virtualId) {
