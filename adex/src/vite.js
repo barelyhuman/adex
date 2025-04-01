@@ -387,9 +387,6 @@ export function createVirtualModule(id, content) {
       }
     },
     load(requestId) {
-      if (requestId === '\0adex/app') {
-        console.log({ content })
-      }
       if (requestId === `\0${id}`) {
         return content
       }
