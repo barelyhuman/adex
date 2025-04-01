@@ -597,6 +597,7 @@ function adexServerBuilder({ fonts, adapter, islands }) {
       console.log(`\nBuilding Server: ${serverOutDir}\n`)
 
       const sanitizedPlugins = (cfg.plugins ?? [])
+        .filter(d => d.adexServer === false)
         .filter(d => !d.name.startsWith('vite:'))
         .filter(d => !d.name.startsWith('adex-'))
 
