@@ -48,8 +48,10 @@ function ComponentWrapper({ url = '' }) {
         Router,
         null,
         routes.map(d => {
+          const routePath = d.routePath.replace(/\/\*(\w+)/, '/:$1*')
+
           return h(Route, {
-            path: normalizeURLPath(d.routePath),
+            path: normalizeURLPath(routePath),
             component: lazy(d.module),
           })
         })
