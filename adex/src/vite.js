@@ -59,6 +59,10 @@ export function adex({
       '/src/_app'
     ),
     createVirtualModule(
+      'adex/app',
+      readFileSync(join(__dirname, '../runtime/app.js'), 'utf8')
+    ),
+    createVirtualModule(
       'virtual:adex:handler',
       readFileSync(join(__dirname, '../runtime/handler.js'), 'utf8')
     ),
@@ -383,6 +387,9 @@ export function createVirtualModule(id, content) {
       }
     },
     load(requestId) {
+      if (requestId === '\0adex/app') {
+        console.log({ content })
+      }
       if (requestId === `\0${id}`) {
         return content
       }
@@ -500,6 +507,13 @@ function adexDevServer({ islands = false } = {}) {
     name: 'adex-dev-server',
     apply: 'serve',
     enforce: 'pre',
+    config() {
+      return {
+        ssr: {
+          noExternal: ['adex/app'],
+        },
+      }
+    },
     configResolved(_cfg) {
       cfg = _cfg
     },
@@ -624,6 +638,10 @@ function adexServerBuilder({ fonts, adapter, islands }) {
             'virtual:adex:global.css',
             '',
             '/src/global.css'
+          ),
+          createVirtualModule(
+            'adex/app',
+            readFileSync(join(__dirname, '../runtime/app.js'), 'utf8')
           ),
           createUserDefaultVirtualModule(
             'virtual:adex:client',
