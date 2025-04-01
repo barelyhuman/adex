@@ -12,3 +12,9 @@ export interface AdexOptions {
 }
 
 export function adex(options: AdexOptions): Plugin[]
+
+declare module 'vite' {
+  interface Plugin {
+    adexServer?: boolean
+  }
+}
