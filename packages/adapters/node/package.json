@@ -1,6 +1,6 @@
 {
   "name": "adex-adapter-node",
-  "version": "0.0.18",
+  "version": "0.0.19-alpha.5",
   "keywords": [
     "adex",
     "preact",
