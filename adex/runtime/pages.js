@@ -71,6 +71,6 @@ function simplifyPath(path) {
     .replace(/(\.(js|ts)x?)/, '')
     .replace(/index/, '/')
     .replace('//', '/')
-    .replace(/\$\$/, '*')
-    .replace(/\$/, ':')
+    .replace(/\$\$/g, '*')
+    .replace(/\$/g, ':')
 }
