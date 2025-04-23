@@ -29,9 +29,6 @@ importers:
       '@lerna-lite/publish':
         specifier: ^4.0.0
         version: 4.0.0(@types/node@22.13.16)(conventional-commits-filter@5.0.0)
-      '@lerna-lite/version':
-        specifier: ^4.0.0
-        version: 4.0.0(@lerna-lite/publish@4.0.0(@types/node@22.13.16)(conventional-commits-filter@5.0.0))(@types/node@22.13.16)(conventional-commits-filter@5.0.0)
       prettier:
         specifier: ^3.5.3
         version: 3.5.3
