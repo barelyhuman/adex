@@ -20,6 +20,7 @@
     "@barelyhuman/prettier-config": "^1.1.0",
     "@lerna-lite/cli": "^4.0.0",
     "@lerna-lite/publish": "^4.0.0",
+    "bumpp": "^9.4.1",
     "prettier": "^3.5.3"
   },
   "pnpm": {
