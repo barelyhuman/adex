@@ -69,16 +69,7 @@ And you are done.
 
 ## Docs
 
-> TBD
-
-- Basic
-- Font
-- Islands
-
-> [!NOTE]
->
-> Refer to the `playground` in the source repo or the default template to
-> understand how to write apps with adex
+[Docs &rarr;](https://barelyhuman.github.io/adex-docs/)
 
 ## License
 
