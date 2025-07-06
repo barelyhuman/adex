@@ -2,6 +2,7 @@
   "$schema": "node_modules/@lerna-lite/cli/schemas/lerna-schema.json",
   "changelogPreset": "angular",
   "npmClient": "pnpm",
+  "version": "fixed",
   "packages": [
     "adex",
     "create-adex",
