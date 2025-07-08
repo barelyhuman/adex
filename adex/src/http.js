@@ -59,4 +59,50 @@ export function prepareResponse(res) {
     res.statusCode = statusCode
     res.setHeader('Location', url)
   }
+
+  // HTTP Status helpers
+  res.badRequest = (message) => {
+    res.statusCode = 400
+    if (message) {
+      res.setHeader('content-type', 'application/json')
+      res.write(JSON.stringify({ error: message }))
+    }
+    res.end()
+  }
+
+  res.unauthorized = (message) => {
+    res.statusCode = 401
+    if (message) {
+      res.setHeader('content-type', 'application/json')
+      res.write(JSON.stringify({ error: message }))
+    }
+    res.end()
+  }
+
+  res.forbidden = (message) => {
+    res.statusCode = 403
+    if (message) {
+      res.setHeader('content-type', 'application/json')
+      res.write(JSON.stringify({ error: message }))
+    }
+    res.end()
+  }
+
+  res.notFound = (message) => {
+    res.statusCode = 404
+    if (message) {
+      res.setHeader('content-type', 'application/json')
+      res.write(JSON.stringify({ error: message }))
+    }
+    res.end()
+  }
+
+  res.internalServerError = (message) => {
+    res.statusCode = 500
+    if (message) {
+      res.setHeader('content-type', 'application/json')
+      res.write(JSON.stringify({ error: message }))
+    }
+    res.end()
+  }
 }
