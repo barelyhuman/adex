@@ -14,6 +14,31 @@ import { routes as pageRoutes } from '~routes'
 
 const html = String.raw
 
+function getMethodHandler(module, method) {
+  const supportedMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD']
+  
+  // Check for method-specific export (case-insensitive)
+  for (const supportedMethod of supportedMethods) {
+    if (method.toUpperCase() === supportedMethod) {
+      if (module[supportedMethod] || module[supportedMethod.toLowerCase()]) {
+        return module[supportedMethod] || module[supportedMethod.toLowerCase()]
+      }
+    }
+  }
+  
+  // Fall back to default export
+  if (module.default) {
+    return module.default
+  }
+  
+  // Return 405 handler if neither exists
+  return (req, res) => {
+    res.statusCode = 405
+    res.setHeader('Allow', supportedMethods.join(', '))
+    res.end('Method Not Allowed')
+  }
+}
+
 export async function handler(req, res) {
   res.statusCode = 200
 
@@ -38,8 +63,7 @@ export async function handler(req, res) {
       }
       await emitToHooked(CONSTANTS.apiCall, modifiableContext)
       return {
-        serverHandler:
-          'default' in module ? module.default : (_, res) => res.end(),
+        serverHandler: getMethodHandler(module, req.method || 'GET'),
       }
     }
     return {

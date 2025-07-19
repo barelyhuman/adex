@@ -19,5 +19,22 @@ export type ServerResponse = HTTPServerResponse & {
   internalServerError: (message?: string) => void
 }
 
+export type APIHandler = (req: IncomingMessage, res: ServerResponse) => void | Promise<void>
+
+// Support for method-specific exports
+export interface APIModule {
+  // Method-specific handlers
+  GET?: APIHandler
+  POST?: APIHandler
+  PUT?: APIHandler
+  PATCH?: APIHandler
+  DELETE?: APIHandler
+  OPTIONS?: APIHandler
+  HEAD?: APIHandler
+  
+  // Legacy default export support
+  default?: APIHandler
+}
+
 export function prepareRequest(req: IncomingMessage): void
 export function prepareResponse(res: ServerResponse): void
