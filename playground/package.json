@@ -2,6 +2,9 @@
   "name": "playground",
   "private": true,
   "version": "0.0.19",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

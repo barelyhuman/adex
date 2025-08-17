@@ -1,19 +1,28 @@
 {
   "name": "adex-adapter-node",
   "version": "0.0.19",
+  "description": "Node.js adapter for Adex, enabling minimal server-side rendering and integration with Preact.",
   "keywords": [
     "adex",
     "preact",
     "minimal",
     "server",
-    "node"
+    "node",
+    "ssr",
+    "adapter"
   ],
-  "bugs": "github.com/barelyhuman/adex/issues",
+  "author": "reaper <ahoy@barelyhuman.dev>",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "github.com/barelyhuman/adex"
+    "url": "https://github.com/barelyhuman/adex"
   },
+  "bugs": {
+    "url": "https://github.com/barelyhuman/adex/issues"
+  },
+  "homepage": "https://github.com/barelyhuman/adex/tree/main/packages/adapters/node",
   "type": "module",
+  "main": "./lib/index.js",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
@@ -22,5 +31,12 @@
   },
   "files": [
     "lib"
-  ]
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/barelyhuman"
+  }
 }

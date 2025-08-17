@@ -1,26 +1,46 @@
 {
   "name": "create-adex",
   "version": "0.0.19",
-  "bin": {
-    "create-adex": "./cli.mjs"
-  },
-  "description": "CLI to create adex projects",
+  "description": "A CLI tool to quickly scaffold new Adex projects with minimal setup.",
   "keywords": [
     "adex",
     "preact",
     "minimal",
     "server",
-    "node"
+    "node",
+    "cli",
+    "scaffold",
+    "starter",
+    "project"
   ],
-  "bugs": "github.com/barelyhuman/adex/issues",
+  "homepage": "https://github.com/barelyhuman/adex#create-adex",
   "repository": {
     "type": "git",
-    "url": "github.com/barelyhuman/adex"
+    "url": "https://github.com/barelyhuman/adex.git"
+  },
+  "bugs": {
+    "url": "https://github.com/barelyhuman/adex/issues"
+  },
+  "author": "reaper <ahoy@barelyhuman.dev>",
+  "license": "MIT",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/barelyhuman"
+  },
+  "main": "./cli.mjs",
+  "exports": {
+    ".": "./cli.mjs"
   },
   "type": "module",
   "files": [
     "cli.mjs"
   ],
+  "bin": {
+    "create-adex": "./cli.mjs"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "kleur": "^4.1.5",
     "node-stream-zip": "^1.15.0"

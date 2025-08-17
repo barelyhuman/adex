@@ -1,20 +1,51 @@
 {
   "name": "adex",
   "version": "0.0.19",
-  "description": "An easier way to build apps with Vite and Preact",
+  "description": "A minimal, fast framework for building apps with Vite and Preact. Simple SSR, routing, and utilities for modern web projects.",
   "keywords": [
     "adex",
     "preact",
+    "vite",
+    "ssr",
+    "framework",
     "minimal",
     "server",
-    "node"
+    "node",
+    "web",
+    "routing"
   ],
-  "bugs": "github.com/barelyhuman/adex/issues",
+  "homepage": "https://github.com/barelyhuman/adex#readme",
+  "bugs": {
+    "url": "https://github.com/barelyhuman/adex/issues",
+    "email": "ahoy@barelyhuman.dev"
+  },
   "repository": {
     "type": "git",
-    "url": "github.com/barelyhuman/adex"
+    "url": "https://github.com/barelyhuman/adex.git"
+  },
+  "author": {
+    "name": "barelyhuman",
+    "email": "ahoy@barelyhuman.dev",
+    "url": "https://reaper.is"
+  },
+  "contributors": [
+    {
+      "name": "barelyhuman",
+      "email": "ahoy@barelyhuman.dev",
+      "url": "https://reaper.is"
+    }
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/barelyhuman"
   },
   "type": "module",
+  "main": "./src/vite.js",
+  "module": "./src/vite.js",
   "exports": {
     "./package.json": "./package.json",
     "./router": {
@@ -57,6 +88,11 @@
       "types": "./src/vite.d.ts",
       "import": "./src/vite.js"
     }
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "files": [
     "src",
