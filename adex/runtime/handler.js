@@ -35,17 +35,24 @@ export async function handler(req, res) {
       req.params = routeParams
       const modifiableContext = {
         req: req,
+        res: res,
       }
-      await emitToHooked(CONSTANTS.apiCall, modifiableContext)
+      await emitToHooked(CONSTANTS.beforeApiCall, modifiableContext)
+      const handlerFn =
+        'default' in module ? module.default : (_, res) => res.end()
+      const serverHandler = async (req, res) => {
+        await handlerFn(req, res)
+        await emitToHooked(CONSTANTS.afterApiCall, { req, res })
+      }
       return {
-        serverHandler:
-          'default' in module ? module.default : (_, res) => res.end(),
+        serverHandler,
       }
     }
     return {
-      serverHandler: (_, res) => {
+      serverHandler: async (_, res) => {
         res.statusCode = 404
         res.end('Not found')
+        await emitToHooked(CONSTANTS.afterApiCall, { req, res })
       },
     }
   }
@@ -60,9 +67,17 @@ export async function handler(req, res) {
     // @ts-expect-error
     global.location = new URL(req.url, 'http://localhost')
 
-    const rendered = await renderToStringAsync(h(App, { url: req.url }), {})
+    const modifiableContext = {
+      req: req,
+    }
+    await emitToHooked(CONSTANTS.beforePageRender, modifiableContext)
 
-    const htmlString = HTMLTemplate({
+    const rendered = await renderToStringAsync(
+      h(App, { url: modifiableContext.req.url }),
+      {}
+    )
+
+    let htmlString = HTMLTemplate({
       metas,
       links,
       title,
@@ -73,13 +88,12 @@ export async function handler(req, res) {
       ),
       body: rendered,
     })
-    const modifiableContext = {
-      req: req,
-      html: htmlString,
-    }
-    await emitToHooked(CONSTANTS.pageRender, modifiableContext)
+
+    modifiableContext.html = htmlString
+    await emitToHooked(CONSTANTS.afterPageRender, modifiableContext)
+    htmlString = modifiableContext.html
     return {
-      html: modifiableContext.html,
+      html: htmlString,
       pageRoute: matchedInPages.route,
     }
   }

@@ -10,8 +10,10 @@ export type APIContext = {
 }
 
 export declare const CONSTANTS: {
-  pageRender: symbol
-  apiCall: symbol
+  beforePageRender: symbol
+  afterPageRender: symbol
+  beforeApiCall: symbol
+  afterApiCall: symbol
 }
 
 export declare function hook(
@@ -20,10 +22,18 @@ export declare function hook(
 ): void
 
 export declare function beforePageRender(
+  fn: (ctx: Omit<Context, 'html'>) => void
+): Promise<void>
+
+export declare function afterPageRender(
   fn: (ctx: Context) => void
 ): Promise<void>
 
 export declare function beforeAPICall(
+  fn: (ctx: APIContext) => void
+): Promise<void>
+
+export declare function afterAPICall(
   fn: (ctx: APIContext) => void
 ): Promise<void>
 
