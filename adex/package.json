@@ -138,6 +138,6 @@
   "peerDependencies": {
     "@preact/preset-vite": ">=2.8.2",
     "adex-adapter-node": ">=0.0.15",
-    "preact": "^10.22.0"
+    "preact": "^10.26.9"
   }
 }
