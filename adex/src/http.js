@@ -61,7 +61,7 @@ export function prepareResponse(res) {
   }
 
   // HTTP Status helpers
-  res.badRequest = (message) => {
+  res.badRequest = message => {
     res.statusCode = 400
     if (message) {
       res.setHeader('content-type', 'application/json')
@@ -70,7 +70,7 @@ export function prepareResponse(res) {
     res.end()
   }
 
-  res.unauthorized = (message) => {
+  res.unauthorized = message => {
     res.statusCode = 401
     if (message) {
       res.setHeader('content-type', 'application/json')
@@ -79,7 +79,7 @@ export function prepareResponse(res) {
     res.end()
   }
 
-  res.forbidden = (message) => {
+  res.forbidden = message => {
     res.statusCode = 403
     if (message) {
       res.setHeader('content-type', 'application/json')
@@ -88,7 +88,7 @@ export function prepareResponse(res) {
     res.end()
   }
 
-  res.notFound = (message) => {
+  res.notFound = message => {
     res.statusCode = 404
     if (message) {
       res.setHeader('content-type', 'application/json')
@@ -97,7 +97,7 @@ export function prepareResponse(res) {
     res.end()
   }
 
-  res.internalServerError = (message) => {
+  res.internalServerError = message => {
     res.statusCode = 500
     if (message) {
       res.setHeader('content-type', 'application/json')
