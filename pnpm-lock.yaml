@@ -32,6 +32,12 @@ importers:
       bumpp:
         specifier: ^9.4.1
         version: 9.4.1
+      husky:
+        specifier: ^9.1.7
+        version: 9.1.7
+      nano-staged:
+        specifier: ^0.8.0
+        version: 0.8.0
       prettier:
         specifier: ^3.5.3
         version: 3.5.3
@@ -84,6 +90,9 @@ importers:
       '@barelyhuman/node-snapshot':
         specifier: ^1.0.2
         version: 1.0.2
+      '@barelyhuman/prettier-config':
+        specifier: ^1.1.0
+        version: 1.1.0
       '@preact/preset-vite':
         specifier: ^2.8.2
         version: 2.9.1(@babel/core@7.24.7)(preact@10.24.2)(vite@5.4.8(@types/node@20.16.10)(lightningcss@1.25.1))
@@ -105,6 +114,12 @@ importers:
       kolorist:
         specifier: ^1.8.0
         version: 1.8.0
+      nano-staged:
+        specifier: ^0.8.0
+        version: 0.8.0
+      prettier:
+        specifier: ^3.5.3
+        version: 3.5.3
       tailwindcss:
         specifier: ^3.4.4
         version: 3.4.13
@@ -189,6 +204,9 @@ importers:
         specifier: ^10.24.2
         version: 10.24.2
     devDependencies:
+      '@barelyhuman/prettier-config':
+        specifier: ^1.1.0
+        version: 1.1.0
       '@preact/preset-vite':
         specifier: ^2.9.1
         version: 2.9.1(@babel/core@7.24.7)(preact@10.24.2)(vite@5.4.8(@types/node@20.16.10)(lightningcss@1.25.1))
@@ -207,6 +225,9 @@ importers:
       postcss:
         specifier: ^8.4.47
         version: 8.4.47
+      prettier:
+        specifier: ^3.5.3
+        version: 3.5.3
       tailwindcss:
         specifier: ^3.4.13
         version: 3.4.13
@@ -1689,6 +1710,11 @@ packages:
     resolution: {integrity: sha512-AXcZb6vzzrFAUE61HnN4mpLqd/cSIwNQjtNWR0euPm6y0iqx3G4gOXaIDdtdDwZmhwe82LA6+zinmW4UBWVePQ==, tarball: https://registry.npmjs.org/human-signals/-/human-signals-5.0.0.tgz}
     engines: {node: '>=16.17.0'}
 
+  husky@9.1.7:
+    resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==, tarball: https://registry.npmjs.org/husky/-/husky-9.1.7.tgz}
+    engines: {node: '>=18'}
+    hasBin: true
+
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==, tarball: https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.6.3.tgz}
     engines: {node: '>=0.10.0'}
@@ -2101,6 +2127,11 @@ packages:
 
   mz@2.7.0:
     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==, tarball: https://registry.npmjs.org/mz/-/mz-2.7.0.tgz}
+
+  nano-staged@0.8.0:
+    resolution: {integrity: sha512-QSEqPGTCJbkHU2yLvfY6huqYPjdBrOaTMKatO1F8nCSrkQGXeKwtCiCnsdxnuMhbg3DTVywKaeWLGCE5oJpq0g==, tarball: https://registry.npmjs.org/nano-staged/-/nano-staged-0.8.0.tgz}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    hasBin: true
 
   nanoid@3.3.8:
     resolution: {integrity: sha512-WNLf5Sd8oZxOm+TzppcYk8gVOgP+l58xNy58D0nbUnOxOWRWvlcCV4kUF7ltmI6PsrLl/BgKEyS4mqsGChFN0w==, tarball: https://registry.npmjs.org/nanoid/-/nanoid-3.3.8.tgz}
@@ -3068,7 +3099,7 @@ snapshots:
       '@babel/helper-validator-identifier': 7.24.7
       chalk: 2.4.2
       js-tokens: 4.0.0
-      picocolors: 1.1.0
+      picocolors: 1.1.1
 
   '@babel/parser@7.24.7':
     dependencies:
@@ -4608,6 +4639,8 @@ snapshots:
 
   human-signals@5.0.0: {}
 
+  husky@9.1.7: {}
+
   iconv-lite@0.6.3:
     dependencies:
       safer-buffer: 2.1.2
@@ -4963,6 +4996,10 @@ snapshots:
       any-promise: 1.3.0
       object-assign: 4.1.1
       thenify-all: 1.6.0
+
+  nano-staged@0.8.0:
+    dependencies:
+      picocolors: 1.1.1
 
   nanoid@3.3.8: {}
 
@@ -5683,7 +5720,7 @@ snapshots:
     dependencies:
       browserslist: 4.24.0
       escalade: 3.1.2
-      picocolors: 1.1.0
+      picocolors: 1.1.1
 
   util-deprecate@1.0.2: {}
 

@@ -12,7 +12,9 @@
     "test:ci": "pnpm -r test:ci",
     "publish:ci": "lerna publish from-git --registry 'https://registry.npmjs.org' --yes",
     "next": "bumpp -r",
-    "nuke": "pnpm -r exec rm -rvf  node_modules"
+    "nuke": "pnpm -r exec rm -rvf  node_modules",
+    "fix": "pnpm -r run --if-present fix",
+    "prepare": "husky"
   },
   "license": "MIT",
   "prettier": "@barelyhuman/prettier-config",
@@ -21,7 +23,14 @@
     "@lerna-lite/cli": "^4.0.0",
     "@lerna-lite/publish": "^4.0.0",
     "bumpp": "^9.4.1",
+    "husky": "^9.1.7",
+    "nano-staged": "^0.8.0",
     "prettier": "^3.5.3"
+  },
+  "nano-staged": {
+    "*.{js,md,ts,json}": [
+      "prettier --write"
+    ]
   },
   "pnpm": {
     "overrides": {
