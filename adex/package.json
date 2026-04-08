@@ -107,7 +107,7 @@
   "dependencies": {
     "@barelyhuman/tiny-use": "^0.0.2",
     "@dumbjs/preland": "^0.0.2",
-    "bumpp": "^9.4.1",
+    "bumpp": "^11.0.1",
     "dotenv": "^16.4.5",
     "hoofd": "^1.7.1",
     "mri": "^1.2.0",
@@ -122,7 +122,7 @@
   "devDependencies": {
     "@barelyhuman/node-snapshot": "^1.0.2",
     "@barelyhuman/prettier-config": "^1.1.0",
-    "@preact/preset-vite": "^2.8.2",
+    "@preact/preset-vite": "catalog:",
     "@types/node": "^20.14.10",
     "adex-adapter-node": "^0.0.17",
     "autoprefixer": "^10.4.19",
@@ -133,7 +133,7 @@
     "nano-staged": "^0.8.0",
     "prettier": "^3.5.3",
     "tailwindcss": "^3.4.4",
-    "vite": "^5.3.1"
+    "vite": "^8.0.7"
   },
   "peerDependenciesMeta": {
     "adex-adapter-node": {

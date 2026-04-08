@@ -9,6 +9,6 @@
     "@preact/preset-vite": "catalog:"
   },
   "devDependencies": {
-    "vite": "^5.4.8"
+    "vite": ">=5.4.8"
   }
 }
