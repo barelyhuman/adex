@@ -32,7 +32,7 @@
       "prettier --write"
     ]
   },
-  "version": "0.0.19",
+  "version": "0.0.20",
   "pnpm": {
     "overrides": {
       "@isaacs/brace-expansion@<=5.0.0": ">=5.0.1",
