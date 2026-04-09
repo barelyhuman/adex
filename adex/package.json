@@ -1,6 +1,6 @@
 {
   "name": "adex",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "description": "A minimal, fast framework for building apps with Vite and Preact. Simple SSR, routing, and utilities for modern web projects.",
   "keywords": [
     "adex",
