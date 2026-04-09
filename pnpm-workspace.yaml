@@ -1,3 +1,7 @@
+
+# 3 days
+minimumReleaseAge: 4320 
+
 packages:
   - adex
   - create-adex
@@ -7,4 +11,4 @@ packages:
 
 catalog:
   "preact": 10.24.2
-  "@preact/preset-vite": 2.9.1
+  "@preact/preset-vite": 2.10.5
