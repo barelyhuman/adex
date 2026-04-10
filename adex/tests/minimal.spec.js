@@ -1,4 +1,5 @@
 import { after, before, describe, it } from 'node:test'
+import assert from 'node:assert'
 
 import { devServerURL, launchDemoDevServer } from './utils.js'
 import { snapshot } from '@barelyhuman/node-snapshot'
@@ -35,5 +36,21 @@ describe('devMode ssr minimal', async () => {
         'virtual:adex:global.css'
       )
     )
+  })
+
+  await it('API route returns JSON with 200', async () => {
+    const response = await fetch(new URL('/api/ping', devServerURL))
+    const json = await response.json()
+
+    assert.strictEqual(response.status, 200)
+    assert.strictEqual(json.ok, true)
+    assert.strictEqual(json.method, 'GET')
+  })
+
+  await it('unknown route returns 404', async () => {
+    const response = await fetch(
+      new URL('/this-route-does-not-exist', devServerURL)
+    )
+    assert.strictEqual(response.status, 404)
   })
 })

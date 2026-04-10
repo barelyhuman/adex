@@ -1,27 +1,50 @@
 /**
- * @param {import("adex/http").IncomingMessage} req
- * @param {import("adex/http").ServerResponse} res
+ * @param {Request} request
  */
-export default (req, res) => {
-  const { pathname, searchParams } = new URL(req.url, 'http://localhost')
+export default request => {
+  const { searchParams } = new URL(request.url)
   const type = searchParams.get('type')
   const message = searchParams.get('message')
+  const errorBody = msg => (msg ? JSON.stringify({ error: msg }) : null)
+  const jsonHeaders = { 'content-type': 'application/json' }
 
   switch (type) {
     case 'badRequest':
-      return res.badRequest(message)
+      return new Response(errorBody(message), {
+        status: 400,
+        headers: jsonHeaders,
+      })
     case 'unauthorized':
-      return res.unauthorized(message)
+      return new Response(errorBody(message), {
+        status: 401,
+        headers: jsonHeaders,
+      })
     case 'forbidden':
-      return res.forbidden(message)
+      return new Response(errorBody(message), {
+        status: 403,
+        headers: jsonHeaders,
+      })
     case 'notFound':
-      return res.notFound(message)
+      return new Response(errorBody(message), {
+        status: 404,
+        headers: jsonHeaders,
+      })
     case 'internalServerError':
-      return res.internalServerError(message)
+      return new Response(errorBody(message), {
+        status: 500,
+        headers: jsonHeaders,
+      })
     default:
-      return res.json({
-        usage: 'Add ?type=badRequest&message=Custom%20message to test status helpers',
-        available: ['badRequest', 'unauthorized', 'forbidden', 'notFound', 'internalServerError']
+      return Response.json({
+        usage:
+          'Add ?type=badRequest&message=Custom%20message to test status helpers',
+        available: [
+          'badRequest',
+          'unauthorized',
+          'forbidden',
+          'notFound',
+          'internalServerError',
+        ],
       })
   }
 }

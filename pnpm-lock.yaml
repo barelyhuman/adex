@@ -150,6 +150,9 @@ importers:
       adex:
         specifier: workspace:*
         version: link:../../..
+      adex-adapter-node:
+        specifier: workspace:*
+        version: link:../../../../packages/adapters/node
       preact:
         specifier: 'catalog:'
         version: 10.24.2
@@ -166,6 +169,9 @@ importers:
       adex:
         specifier: workspace:*
         version: link:../../..
+      adex-adapter-node:
+        specifier: workspace:*
+        version: link:../../../../packages/adapters/node
       preact:
         specifier: 'catalog:'
         version: 10.24.2
@@ -182,6 +188,9 @@ importers:
       adex:
         specifier: workspace:*
         version: link:../../..
+      adex-adapter-node:
+        specifier: workspace:*
+        version: link:../../../../packages/adapters/node
       preact:
         specifier: 'catalog:'
         version: 10.24.2

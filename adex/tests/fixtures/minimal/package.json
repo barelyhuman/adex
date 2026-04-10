@@ -5,6 +5,7 @@
   "version": "0.0.0",
   "dependencies": {
     "adex": "workspace:*",
+    "adex-adapter-node": "workspace:*",
     "preact": "catalog:",
     "@preact/preset-vite": "catalog:"
   },

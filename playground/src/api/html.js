@@ -5,9 +5,10 @@ afterAPICall(ctx => {
 })
 
 /**
- * @param {import("adex/http").IncomingMessage} req
- * @param {import("adex/http").ServerResponse} res
+ * @param {Request} request
  */
-export default (req, res) => {
-  return res.html(`<h1>Html Response</h1>`)
+export default request => {
+  return new Response(`<h1>Html Response</h1>`, {
+    headers: { 'content-type': 'text/html' },
+  })
 }

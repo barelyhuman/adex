@@ -23,20 +23,65 @@ const cwd = process.cwd()
 const islandsDir = join(cwd, '.islands')
 let runningIslandBuild = false
 
-const adapterMap = {
-  node: 'adex-adapter-node',
+/**
+ * Generate the virtual:adex:server entry code for a given adapter module.
+ * Reads adex.manifest.json at runtime to discover client build info.
+ * @param {string} adapterModule - the import specifier for the adapter
+ * @returns {string}
+ */
+function generateServerEntry(adapterModule) {
+  return `import { createServer } from '${adapterModule}'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
+import { env } from 'adex/env'
+
+import 'virtual:adex:font.css'
+import 'virtual:adex:global.css'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+const PORT = parseInt(env.get('PORT', '3000'), 10)
+const HOST = env.get('HOST', 'localhost')
+
+function readJSON(p) {
+  try { return JSON.parse(readFileSync(p, 'utf8')) } catch { return {} }
+}
+
+const adexManifest = readJSON(join(__dirname, 'adex.manifest.json'))
+const serverManifest = readJSON(join(__dirname, 'manifest.json'))
+const clientManifest = adexManifest?.client?.bundle
+  ? readJSON(join(__dirname, adexManifest.client.manifestPath))
+  : {}
+
+const paths = {
+  assets: join(__dirname, './assets'),
+  islands: join(__dirname, './islands'),
+  client: join(__dirname, adexManifest?.client?.outDir ?? '../client'),
+}
+
+const server = createServer({
+  port: PORT,
+  host: HOST,
+  adex: {
+    manifests: { server: serverManifest, client: clientManifest },
+    paths,
+    client: adexManifest?.client ?? { bundle: false, islands: false },
+  },
+})
+
+if ('run' in server) { server.run() }
+export default server.fetch
+`
 }
 
 /**
  * @param {import("./vite.js").AdexOptions} [options]
  * @returns {(import("vite").Plugin)[]}
  */
-export function adex({
-  fonts,
-  islands = false,
-  ssr = true,
-  adapter: adapter = 'node',
-} = {}) {
+export function adex({ fonts, islands = false, ssr = true, adapter } = {}) {
+  const adapterModule = adapter?.module ?? 'adex-adapter-node'
+
   // @ts-expect-error probably because of the `.filter`
   return [
     preactPages({
@@ -68,71 +113,10 @@ export function adex({
     ),
     createVirtualModule(
       'virtual:adex:server',
-      `import { createServer } from '${adapterMap[adapter]}'
-      import { dirname, join } from 'node:path'
-      import { fileURLToPath } from 'node:url'
-      import { existsSync, readFileSync } from 'node:fs'
-      import { env } from 'adex/env'
-
-      import 'virtual:adex:font.css'
-      import 'virtual:adex:global.css'
-
-      const __dirname = dirname(fileURLToPath(import.meta.url))
-
-      const PORT = parseInt(env.get('PORT', '3000'), 10)
-      const HOST = env.get('HOST', 'localhost')
-
-      const paths = {
-        assets: join(__dirname, './assets'),
-        islands: join(__dirname, './islands'),
-        client: join(__dirname, '../client'),
-      }
-
-      function getServerManifest() {
-        const manifestPath = join(__dirname, 'manifest.json')
-        if (existsSync(manifestPath)) {
-          const manifestFile = readFileSync(manifestPath, 'utf8')
-          return parseManifest(manifestFile)
-        }
-        return {}
-      }
-
-      function getClientManifest() {
-        const manifestPath = join(__dirname, '../client/manifest.json')
-        if (existsSync(manifestPath)) {
-          const manifestFile = readFileSync(manifestPath, 'utf8')
-          return parseManifest(manifestFile)
-        }
-        return {}
-      }
-
-      function parseManifest(manifestString) {
-        try {
-          const manifestJSON = JSON.parse(manifestString)
-          return manifestJSON
-        } catch (err) {
-          return {}
-        }
-      }
-
-      const server = createServer({
-        port: PORT,
-        host: HOST,
-        adex:{
-          manifests:{server:getServerManifest(),client:getClientManifest()},
-          paths,
-        }
-      })
-
-      if ('run' in server) {
-        server.run()
-      }
-
-      export default server.fetch
-      `
+      generateServerEntry(adapterModule)
     ),
     addFontsPlugin(fonts),
-    adexDevServer({ islands }),
+    adapter?.devServerPlugin?.({ islands }),
     adexBuildPrep({ islands }),
     adexClientBuilder({ ssr, islands }),
     islands && adexIslandsBuilder(),
@@ -495,92 +479,9 @@ function adexClientSSRBuilder(opts) {
 }
 
 /**
- * @returns {import("vite").Plugin}
- */
-function adexDevServer({ islands = false } = {}) {
-  const devCSSMap = new Map()
-  let cfg
-  return {
-    name: 'adex-dev-server',
-    apply: 'serve',
-    enforce: 'pre',
-    config() {
-      return {
-        ssr: {
-          noExternal: ['adex/app'],
-        },
-      }
-    },
-    configResolved(_cfg) {
-      cfg = _cfg
-    },
-    async resolveId(id, importer, meta) {
-      if (id.endsWith('.css')) {
-        if (!importer) return
-        const importerFromRoot = importer.replace(resolve(cfg.root), '')
-        const resolvedCss = await this.resolve(id, importer, meta)
-        if (resolvedCss) {
-          devCSSMap.set(
-            importerFromRoot,
-            (devCSSMap.get(importer) ?? []).concat(resolvedCss.id)
-          )
-        }
-        return
-      }
-    },
-    configureServer(server) {
-      return () => {
-        server.middlewares.use(async function (req, res, next) {
-          const module = await server.ssrLoadModule('virtual:adex:handler')
-          if (!module) {
-            return next()
-          }
-          try {
-            const { html, serverHandler, pageRoute } = await module.handler(
-              req,
-              res
-            )
-            if (serverHandler) {
-              return serverHandler(req, res)
-            }
-            const cssLinks = devCSSMap.get(pageRoute) ?? []
-            let renderedHTML = html.replace(
-              '</head>',
-              `
-              <link rel="preload" href="/virtual:adex:global.css" as="style" onload="this.rel='stylesheet'" />
-              ${cssLinks.map(d => {
-                return `<link rel="preload" href="/${d}" as="style" onload="this.rel='stylesheet'"/>`
-              })}
-              </head>
-            `
-            )
-            if (!islands) {
-              renderedHTML = html.replace(
-                '</body>',
-                `<script type='module' src="/virtual:adex:client"></script></body>`
-              )
-            }
-            const finalRenderedHTML = await server.transformIndexHtml(
-              req.url,
-              renderedHTML
-            )
-            res.setHeader('content-type', 'text/html')
-            res.write(finalRenderedHTML)
-            return res.end()
-          } catch (err) {
-            server.ssrFixStacktrace(err)
-            next(err)
-          }
-        })
-      }
-    },
-  }
-}
-
-/**
  * @param {object} options
  * @param {import("./fonts.js").Options} options.fonts
- * @param {string} options.adapter
+ * @param {import("./vite.js").AdapterConfig} options.adapter
  * @param {boolean} options.islands
  * @returns {import("vite").Plugin}
  */
@@ -616,7 +517,7 @@ function adexServerBuilder({ fonts, adapter, islands }) {
         configFile: false,
         ssr: {
           external: ['preact', 'adex', 'preact-render-to-string'],
-          noExternal: Object.values(adapterMap),
+          noExternal: adapter?.name ? [adapter.name] : [],
         },
         resolve: cfg.resolve,
         appType: 'custom',
@@ -651,69 +552,27 @@ function adexServerBuilder({ fonts, adapter, islands }) {
           ),
           createVirtualModule(
             'virtual:adex:server',
-            `import { createServer } from '${adapterMap[adapter]}'
-            import { dirname, join } from 'node:path'
-            import { fileURLToPath } from 'node:url'
-            import { existsSync, readFileSync } from 'node:fs'
-            import { env } from 'adex/env'
-      
-            import 'virtual:adex:font.css'
-            import 'virtual:adex:global.css'
-            
-            const __dirname = dirname(fileURLToPath(import.meta.url))
-      
-            const PORT = parseInt(env.get('PORT', '3000'), 10)
-            const HOST = env.get('HOST', 'localhost')
-      
-            const paths = {
-              assets: join(__dirname, './assets'),
-              islands: join(__dirname, './islands'),
-              client: join(__dirname, '../client'),
-            }
-            
-            function getServerManifest() {
-              const manifestPath = join(__dirname, 'manifest.json')
-              if (existsSync(manifestPath)) {
-                const manifestFile = readFileSync(manifestPath, 'utf8')
-                return parseManifest(manifestFile)
-              }
-              return {}
-            }
-            
-            function getClientManifest() {
-              const manifestPath = join(__dirname, '../client/manifest.json')
-              if (existsSync(manifestPath)) {
-                const manifestFile = readFileSync(manifestPath, 'utf8')
-                return parseManifest(manifestFile)
-              }
-              return {}
-            }
-      
-            function parseManifest(manifestString) {
-              try {
-                const manifestJSON = JSON.parse(manifestString)
-                return manifestJSON
-              } catch (err) {
-                return {}
-              }
-            }
-      
-            const server = createServer({
-              port: PORT,
-              host: HOST,
-              adex:{
-                manifests:{server:getServerManifest(),client:getClientManifest()},
-                paths,
-              }
-            })
-            
-            if ('run' in server) {
-              server.run()
-            }
-            
-            export default server.fetch
-            `
+            generateServerEntry(adapter?.module ?? 'adex-adapter-node')
           ),
+          // Emit adex.manifest.json into the server output so the adapter
+          // kernel knows at runtime whether a client bundle was built.
+          {
+            name: 'adex-manifest-sidecar',
+            generateBundle() {
+              this.emitFile({
+                type: 'asset',
+                fileName: 'adex.manifest.json',
+                source: JSON.stringify({
+                  client: {
+                    bundle: !islands && existsSync(join(defOut, 'client')),
+                    islands: !!islands,
+                    manifestPath: '../client/manifest.json',
+                    outDir: '../client',
+                  },
+                }),
+              })
+            },
+          },
           addFontsPlugin(fonts),
           islands && adexIslandsBuilder(),
           ...sanitizedPlugins,

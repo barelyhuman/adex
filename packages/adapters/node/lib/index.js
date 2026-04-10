@@ -1,20 +1,198 @@
 import { existsSync } from 'node:fs'
 import http from 'node:http'
-
-import { sirv, useMiddleware } from 'adex/ssr'
-
-import { handler } from 'virtual:adex:handler'
+import { resolve } from 'node:path'
 
 let islandMode = false
 
-function createHandler({ manifests, paths }) {
+/**
+ * Convert a Node.js IncomingMessage to a Fetch API Request.
+ * @param {import('node:http').IncomingMessage} req
+ * @returns {Promise<Request>}
+ */
+async function nodeRequestToFetch(req) {
+  const protocol = req.socket?.encrypted ? 'https' : 'http'
+  const host = req.headers['host'] ?? 'localhost'
+  const url = new URL(req.url, `${protocol}://${host}`)
+
+  const headers = new Headers()
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (Array.isArray(value)) {
+      for (const v of value) headers.append(key, v)
+    } else if (value != null) {
+      headers.set(key, value)
+    }
+  }
+
+  const hasBody = req.method !== 'GET' && req.method !== 'HEAD'
+  let body = undefined
+  if (hasBody) {
+    body = await new Promise((resolve, reject) => {
+      const chunks = []
+      req.on('data', chunk => chunks.push(chunk))
+      req.on('end', () => resolve(Buffer.concat(chunks)))
+      req.on('error', reject)
+    })
+  }
+
+  return new Request(url.href, {
+    method: req.method,
+    headers,
+    body: body ?? null,
+  })
+}
+
+/**
+ * Write a Fetch API Response to a Node.js ServerResponse.
+ * Skips x-adex-* internal headers.
+ * @param {Response} response
+ * @param {import('node:http').ServerResponse} res
+ * @returns {Promise<void>}
+ */
+async function fetchResponseToNode(response, res) {
+  res.statusCode = response.status
+  for (const [key, value] of response.headers.entries()) {
+    if (key.startsWith('x-adex-')) continue
+    res.setHeader(key, value)
+  }
+  if (response.body) {
+    const buf = Buffer.from(await response.arrayBuffer())
+    res.write(buf)
+  }
+  res.end()
+}
+
+/**
+ * Adapter factory — pass to adex({ adapter: node() }) in vite.config.js
+ * Returns an AdapterConfig object the core framework uses at build time.
+ * @param {import('./index.d.ts').NodeAdapterOptions} [options]
+ * @returns {import('./index.d.ts').AdapterConfig}
+ */
+export function node(options = {}) {
+  return {
+    name: 'adex-adapter-node',
+    module: 'adex-adapter-node',
+    devServerPlugin({ islands }) {
+      return createNodeDevServerPlugin({ islands })
+    },
+  }
+}
+
+/**
+ * Creates the Vite dev server plugin for the node adapter.
+ * This is the relocated + updated equivalent of the old adexDevServer plugin
+ * that used to live in adex/src/vite.js. It owns how requests are served
+ * in dev mode for a Node.js environment.
+ *
+ * @param {{ islands: boolean }} options
+ * @returns {import('vite').Plugin}
+ */
+function createNodeDevServerPlugin({ islands = false } = {}) {
+  const devCSSMap = new Map()
+  let cfg
+
+  return {
+    name: 'adex-dev-server',
+    apply: 'serve',
+    enforce: 'pre',
+    config() {
+      return {
+        ssr: {
+          noExternal: ['adex/app'],
+        },
+      }
+    },
+    configResolved(_cfg) {
+      cfg = _cfg
+    },
+    async resolveId(id, importer, meta) {
+      if (id.endsWith('.css')) {
+        if (!importer) return
+        const importerFromRoot = importer.replace(resolve(cfg.root), '')
+        const resolvedCss = await this.resolve(id, importer, meta)
+        if (resolvedCss) {
+          devCSSMap.set(
+            importerFromRoot,
+            (devCSSMap.get(importer) ?? []).concat(resolvedCss.id)
+          )
+        }
+        return
+      }
+    },
+    configureServer(server) {
+      return () => {
+        server.middlewares.use(async function (req, res, next) {
+          const module = await server.ssrLoadModule('virtual:adex:handler')
+          if (!module) {
+            return next()
+          }
+          try {
+            const fetchRequest = await nodeRequestToFetch(req)
+            const response = await module.handler(fetchRequest)
+            const pageRoute = response.headers.get('x-adex-page-route')
+
+            if (!pageRoute) {
+              // API response or 404 — write directly to node res
+              await fetchResponseToNode(response, res)
+              return
+            }
+
+            // Page response — inject dev CSS preload links + HMR client script
+            const cssLinks = devCSSMap.get(pageRoute) ?? []
+            let html = await response.text()
+
+            html = html.replace(
+              '</head>',
+              `
+              <link rel="preload" href="/virtual:adex:global.css" as="style" onload="this.rel='stylesheet'" />
+              ${cssLinks
+                .map(
+                  d =>
+                    `<link rel="preload" href="/${d}" as="style" onload="this.rel='stylesheet'"/>`
+                )
+                .join('')}
+              </head>`
+            )
+
+            if (!islands) {
+              html = html.replace(
+                '</body>',
+                `<script type='module' src="/virtual:adex:client"></script></body>`
+              )
+            }
+
+            const finalHTML = await server.transformIndexHtml(req.url, html)
+            res.setHeader('content-type', 'text/html')
+            res.write(finalHTML)
+            res.end()
+          } catch (err) {
+            server.ssrFixStacktrace(err)
+            next(err)
+          }
+        })
+      }
+    },
+  }
+}
+
+/**
+ * @param {{ manifests: object, paths: object, client: import('./index.d.ts').AdapterClientInfo }} adexConfig
+ */
+async function createHandler({
+  manifests,
+  paths,
+  client = { bundle: true, islands: false },
+}) {
+  const { sirv, useMiddleware } = await import('adex/ssr')
+  // @ts-expect-error injected by vite
+  const { handler } = await import('virtual:adex:handler')
+
   const serverAssets = sirv(paths.assets, {
     maxAge: 31536000,
     immutable: true,
     onNoMatch: defaultHandler,
   })
 
-  let islandsWereGenerated = existsSync(paths.islands)
+  let islandsWereGenerated = client.islands && existsSync(paths.islands)
 
   // @ts-ignore
   let islandAssets = (req, res, next) => {
@@ -30,7 +208,7 @@ function createHandler({ manifests, paths }) {
     })
   }
 
-  let clientWasGenerated = existsSync(paths.client)
+  let clientWasGenerated = client.bundle && existsSync(paths.client)
 
   // @ts-ignore
   let clientAssets = (req, res, next) => {
@@ -46,19 +224,24 @@ function createHandler({ manifests, paths }) {
   }
 
   async function defaultHandler(req, res) {
-    const { html: template, pageRoute, serverHandler } = await handler(req, res)
-    if (serverHandler) {
-      return serverHandler(req, res)
+    const fetchRequest = await nodeRequestToFetch(req)
+    const response = await handler(fetchRequest)
+    const pageRoute = response.headers.get('x-adex-page-route')
+
+    if (!pageRoute) {
+      // API response or 404 — write directly
+      await fetchResponseToNode(response, res)
+      return
     }
 
-    const templateWithDeps = addDependencyAssets(
-      template,
+    // Page response — inject manifest CSS/JS assets
+    const html = await response.text()
+    const finalHTML = addDependencyAssets(
+      html,
       pageRoute,
       manifests.server,
       manifests.client
     )
-
-    const finalHTML = templateWithDeps
     res.setHeader('content-type', 'text/html')
     res.write(finalHTML)
     res.end()
@@ -88,40 +271,11 @@ function createHandler({ manifests, paths }) {
   )
 }
 
-// function parseManifest(manifestString) {
-//   try {
-//     const manifestJSON = JSON.parse(manifestString)
-//     return manifestJSON
-//   } catch (err) {
-//     return {}
-//   }
-// }
-
-// function getServerManifest() {
-//   const manifestPath = join(__dirname, 'manifest.json')
-//   if (existsSync(manifestPath)) {
-//     const manifestFile = readFileSync(manifestPath, 'utf8')
-//     return parseManifest(manifestFile)
-//   }
-//   return {}
-// }
-
-// function getClientManifest() {
-//   const manifestPath = join(__dirname, '../client/manifest.json')
-//   if (existsSync(manifestPath)) {
-//     const manifestFile = readFileSync(manifestPath, 'utf8')
-//     return parseManifest(manifestFile)
-//   }
-//   return {}
-// }
-
 function manifestToHTML(manifest, filePath) {
   let links = []
   let scripts = []
 
-  // TODO: move it up the chain
   const rootServerFile = 'virtual:adex:server'
-  // if root manifest, also add it's css imports in
   if (manifest[rootServerFile]) {
     const graph = manifest[rootServerFile]
     links = links.concat(
@@ -135,9 +289,7 @@ function manifestToHTML(manifest, filePath) {
     )
   }
 
-  // TODO: move it up the chain
   const rootClientFile = 'virtual:adex:client'
-  // if root manifest, also add it's css imports in
   if (!islandMode && manifest[rootClientFile]) {
     const graph = manifest[rootClientFile]
     links = links.concat(
@@ -229,14 +381,24 @@ export const createServer = ({
       client: {},
     },
     paths: {},
+    client: { bundle: true, islands: false },
   },
 } = {}) => {
-  const handler = createHandler(adex)
-  const server = http.createServer(handler)
+  // createHandler is async (uses dynamic imports); wrap in a lazy-init server
+  let server
+
+  async function getServer() {
+    if (!server) {
+      const handler = await createHandler(adex)
+      server = http.createServer(handler)
+    }
+    return server
+  }
 
   return {
-    run() {
-      return server.listen(port, host, () => {
+    async run() {
+      const s = await getServer()
+      return s.listen(port, host, () => {
         console.log(`Listening on ${host}:${port}`)
       })
     },
