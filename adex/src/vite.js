@@ -610,7 +610,7 @@ function adexServerBuilder({ fonts, adapter, islands }) {
                 fileName: 'adex.manifest.json',
                 source: JSON.stringify({
                   client: {
-                    bundle: !islands && existsSync(join(defOut, 'client')),
+                    bundle: !islands,
                     islands: !!islands,
                     manifestPath: '../client/manifest.json',
                     outDir: '../client',
