@@ -1,9 +1,9 @@
 /**
- * @param {import("adex/http").IncomingMessage} req
- * @param {import("adex/http").ServerResponse} res
+ * @param {Request} request
  */
-export default (req, res) => {
-  return res.json({
-    message: `Hello in ${req.params.id}`,
-  })
+export default request => {
+  const { pathname } = new URL(request.url)
+  // route: /api/:id/json — id is the second path segment
+  const id = pathname.split('/')[2]
+  return Response.json({ message: `Hello in ${id}` })
 }

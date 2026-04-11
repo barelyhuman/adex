@@ -1,12 +1,11 @@
-import { IncomingMessage } from 'node:http'
-
-export type Context = {
-  req: IncomingMessage
-  html: string
+export type PageRenderContext = {
+  request: Request
+  html?: string
 }
 
 export type APIContext = {
-  req: IncomingMessage
+  request: Request
+  response?: Response
 }
 
 export declare const CONSTANTS: {
@@ -22,15 +21,15 @@ export declare function hook(
 ): void
 
 export declare function beforePageRender(
-  fn: (ctx: Omit<Context, 'html'>) => void
+  fn: (ctx: Omit<PageRenderContext, 'html'>) => void
 ): Promise<void>
 
 export declare function afterPageRender(
-  fn: (ctx: Context) => void
+  fn: (ctx: PageRenderContext) => void
 ): Promise<void>
 
 export declare function beforeAPICall(
-  fn: (ctx: APIContext) => void
+  fn: (ctx: Omit<APIContext, 'response'>) => void
 ): Promise<void>
 
 export declare function afterAPICall(

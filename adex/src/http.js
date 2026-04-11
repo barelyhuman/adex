@@ -29,6 +29,65 @@ export function prepareRequest(req) {
 }
 
 /**
+ * Convert a Node.js IncomingMessage to a Fetch API Request.
+ * Reconstructs the full URL from req.url + Host header.
+ * Reads and buffers the body stream.
+ * @param {import("./http.js").IncomingMessage} req
+ * @returns {Promise<Request>}
+ */
+export async function nodeRequestToFetch(req) {
+  const protocol = req.socket?.encrypted ? 'https' : 'http'
+  const host = req.headers['host'] ?? 'localhost'
+  const url = new URL(req.url, `${protocol}://${host}`)
+
+  const headers = new Headers()
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (Array.isArray(value)) {
+      for (const v of value) headers.append(key, v)
+    } else if (value != null) {
+      headers.set(key, value)
+    }
+  }
+
+  const hasBody = req.method !== 'GET' && req.method !== 'HEAD'
+  let body = undefined
+  if (hasBody) {
+    body = await new Promise((resolve, reject) => {
+      const chunks = []
+      req.on('data', chunk => chunks.push(chunk))
+      req.on('end', () => resolve(Buffer.concat(chunks)))
+      req.on('error', reject)
+    })
+  }
+
+  return new Request(url.href, {
+    method: req.method,
+    headers,
+    body: body ?? null,
+  })
+}
+
+/**
+ * Write a Fetch API Response to a Node.js ServerResponse.
+ * Copies status, headers (skipping x-adex-* internal headers), and streams body.
+ * @param {Response} response
+ * @param {import("./http.js").ServerResponse} res
+ * @returns {Promise<void>}
+ */
+export async function fetchResponseToNode(response, res) {
+  res.statusCode = response.status
+  for (const [key, value] of response.headers.entries()) {
+    if (key.startsWith('x-adex-')) continue
+    res.setHeader(key, value)
+  }
+  if (response.body) {
+    const buf = Buffer.from(await response.arrayBuffer())
+    res.write(buf)
+  }
+  res.end()
+}
+
+/**
  * @param {import("./http.js").ServerResponse} res
  */
 export function prepareResponse(res) {

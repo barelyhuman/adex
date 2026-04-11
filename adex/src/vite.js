@@ -23,20 +23,80 @@ const cwd = process.cwd()
 const islandsDir = join(cwd, '.islands')
 let runningIslandBuild = false
 
-const adapterMap = {
-  node: 'adex-adapter-node',
+/**
+ * Resolve the adapter, defaulting to adex-adapter-node if none is provided.
+ * Cached after first resolution so it is only imported once per Vite session.
+ * Throws a clear, actionable error if the default cannot be found.
+ * @param {import("./vite.js").AdapterConfig | undefined} adapter
+ * @returns {Promise<import("./vite.js").AdapterConfig>}
+ */
+async function ensureAdapter(adapter) {
+  if (adapter) return adapter
+  try {
+    const mod = await import('adex-adapter-node')
+    return mod.node()
+  } catch {
+    throw new Error(
+      "[adex] No adapter was provided and 'adex-adapter-node' could not be found.\n" +
+        'Install it:       npm add adex-adapter-node\n' +
+        'Or pass it explicitly:  adex({ adapter: node() })'
+    )
+  }
+}
+
+/**
+ * Creates a proxy Vite plugin that forwards all dev-server hooks to the
+ * adapter's devServerPlugin. The adapter is resolved lazily on first use so
+ * that the default (adex-adapter-node) can be imported asynchronously when no
+ * adapter is explicitly provided.
+ *
+ * @param {{ adapter: import("./vite.js").AdapterConfig | undefined, islands: boolean }} options
+ * @returns {import("vite").Plugin}
+ */
+function createAdapterDevServerPlugin({ adapter, islands }) {
+  /** @type {import("vite").Plugin | null} */
+  let inner = null
+
+  async function getInner() {
+    if (inner) return inner
+    const resolved = await ensureAdapter(adapter)
+    inner = resolved.devServerPlugin({ islands })
+    return inner
+  }
+
+  return {
+    name: 'adex-adapter-dev-server',
+    apply: 'serve',
+    enforce: 'pre',
+    async config(...args) {
+      const p = await getInner()
+      return p.config?.call(this, ...args)
+    },
+    async configResolved(...args) {
+      const p = await getInner()
+      return p.configResolved?.call(this, ...args)
+    },
+    async resolveId(...args) {
+      const p = await getInner()
+      return p.resolveId?.call(this, ...args)
+    },
+    configureServer(server) {
+      // configureServer must return a function (or void) synchronously in
+      // Vite's plugin contract, but the return value can itself be async.
+      return async () => {
+        const plugin = await getInner()
+        const result = plugin.configureServer?.call(this, server)
+        if (typeof result === 'function') await result()
+      }
+    },
+  }
 }
 
 /**
  * @param {import("./vite.js").AdexOptions} [options]
  * @returns {(import("vite").Plugin)[]}
  */
-export function adex({
-  fonts,
-  islands = false,
-  ssr = true,
-  adapter: adapter = 'node',
-} = {}) {
+export function adex({ fonts, islands = false, ssr = true, adapter } = {}) {
   // @ts-expect-error probably because of the `.filter`
   return [
     preactPages({
@@ -66,73 +126,28 @@ export function adex({
       'virtual:adex:handler',
       readFileSync(join(__dirname, '../runtime/handler.js'), 'utf8')
     ),
-    createVirtualModule(
-      'virtual:adex:server',
-      `import { createServer } from '${adapterMap[adapter]}'
-      import { dirname, join } from 'node:path'
-      import { fileURLToPath } from 'node:url'
-      import { existsSync, readFileSync } from 'node:fs'
-      import { env } from 'adex/env'
-
-      import 'virtual:adex:font.css'
-      import 'virtual:adex:global.css'
-
-      const __dirname = dirname(fileURLToPath(import.meta.url))
-
-      const PORT = parseInt(env.get('PORT', '3000'), 10)
-      const HOST = env.get('HOST', 'localhost')
-
-      const paths = {
-        assets: join(__dirname, './assets'),
-        islands: join(__dirname, './islands'),
-        client: join(__dirname, '../client'),
-      }
-
-      function getServerManifest() {
-        const manifestPath = join(__dirname, 'manifest.json')
-        if (existsSync(manifestPath)) {
-          const manifestFile = readFileSync(manifestPath, 'utf8')
-          return parseManifest(manifestFile)
+    // virtual:adex:server — content is adapter-owned, resolved lazily so the
+    // default adapter (adex-adapter-node) can be imported async if not provided.
+    {
+      name: 'adex-virtual-server-entry',
+      enforce: 'pre',
+      resolveId(id) {
+        if (id === 'virtual:adex:server' || id === '/virtual:adex:server') {
+          return '\0virtual:adex:server'
         }
-        return {}
-      }
-
-      function getClientManifest() {
-        const manifestPath = join(__dirname, '../client/manifest.json')
-        if (existsSync(manifestPath)) {
-          const manifestFile = readFileSync(manifestPath, 'utf8')
-          return parseManifest(manifestFile)
-        }
-        return {}
-      }
-
-      function parseManifest(manifestString) {
-        try {
-          const manifestJSON = JSON.parse(manifestString)
-          return manifestJSON
-        } catch (err) {
-          return {}
-        }
-      }
-
-      const server = createServer({
-        port: PORT,
-        host: HOST,
-        adex:{
-          manifests:{server:getServerManifest(),client:getClientManifest()},
-          paths,
-        }
-      })
-
-      if ('run' in server) {
-        server.run()
-      }
-
-      export default server.fetch
-      `
-    ),
+      },
+      async load(id) {
+        if (id !== '\0virtual:adex:server') return
+        const resolved = await ensureAdapter(adapter)
+        return resolved.serverEntry({ islands })
+      },
+    },
     addFontsPlugin(fonts),
-    adexDevServer({ islands }),
+    // Dev-server plugin — adapter-owned. If no adapter is given, the default
+    // (adex-adapter-node) is resolved async on first hook invocation.
+    // We wrap it in a proxy plugin so all hooks (config, configResolved,
+    // resolveId, configureServer) are forwarded to the real plugin object.
+    createAdapterDevServerPlugin({ adapter, islands }),
     adexBuildPrep({ islands }),
     adexClientBuilder({ ssr, islands }),
     islands && adexIslandsBuilder(),
@@ -495,92 +510,9 @@ function adexClientSSRBuilder(opts) {
 }
 
 /**
- * @returns {import("vite").Plugin}
- */
-function adexDevServer({ islands = false } = {}) {
-  const devCSSMap = new Map()
-  let cfg
-  return {
-    name: 'adex-dev-server',
-    apply: 'serve',
-    enforce: 'pre',
-    config() {
-      return {
-        ssr: {
-          noExternal: ['adex/app'],
-        },
-      }
-    },
-    configResolved(_cfg) {
-      cfg = _cfg
-    },
-    async resolveId(id, importer, meta) {
-      if (id.endsWith('.css')) {
-        if (!importer) return
-        const importerFromRoot = importer.replace(resolve(cfg.root), '')
-        const resolvedCss = await this.resolve(id, importer, meta)
-        if (resolvedCss) {
-          devCSSMap.set(
-            importerFromRoot,
-            (devCSSMap.get(importer) ?? []).concat(resolvedCss.id)
-          )
-        }
-        return
-      }
-    },
-    configureServer(server) {
-      return () => {
-        server.middlewares.use(async function (req, res, next) {
-          const module = await server.ssrLoadModule('virtual:adex:handler')
-          if (!module) {
-            return next()
-          }
-          try {
-            const { html, serverHandler, pageRoute } = await module.handler(
-              req,
-              res
-            )
-            if (serverHandler) {
-              return serverHandler(req, res)
-            }
-            const cssLinks = devCSSMap.get(pageRoute) ?? []
-            let renderedHTML = html.replace(
-              '</head>',
-              `
-              <link rel="preload" href="/virtual:adex:global.css" as="style" onload="this.rel='stylesheet'" />
-              ${cssLinks.map(d => {
-                return `<link rel="preload" href="/${d}" as="style" onload="this.rel='stylesheet'"/>`
-              })}
-              </head>
-            `
-            )
-            if (!islands) {
-              renderedHTML = html.replace(
-                '</body>',
-                `<script type='module' src="/virtual:adex:client"></script></body>`
-              )
-            }
-            const finalRenderedHTML = await server.transformIndexHtml(
-              req.url,
-              renderedHTML
-            )
-            res.setHeader('content-type', 'text/html')
-            res.write(finalRenderedHTML)
-            return res.end()
-          } catch (err) {
-            server.ssrFixStacktrace(err)
-            next(err)
-          }
-        })
-      }
-    },
-  }
-}
-
-/**
  * @param {object} options
  * @param {import("./fonts.js").Options} options.fonts
- * @param {string} options.adapter
+ * @param {import("./vite.js").AdapterConfig} options.adapter
  * @param {boolean} options.islands
  * @returns {import("vite").Plugin}
  */
@@ -616,7 +548,7 @@ function adexServerBuilder({ fonts, adapter, islands }) {
         configFile: false,
         ssr: {
           external: ['preact', 'adex', 'preact-render-to-string'],
-          noExternal: Object.values(adapterMap),
+          noExternal: adapter?.name ? [adapter.name] : [],
         },
         resolve: cfg.resolve,
         appType: 'custom',
@@ -649,71 +581,44 @@ function adexServerBuilder({ fonts, adapter, islands }) {
             'virtual:adex:handler',
             readFileSync(join(__dirname, '../runtime/handler.js'), 'utf8')
           ),
-          createVirtualModule(
-            'virtual:adex:server',
-            `import { createServer } from '${adapterMap[adapter]}'
-            import { dirname, join } from 'node:path'
-            import { fileURLToPath } from 'node:url'
-            import { existsSync, readFileSync } from 'node:fs'
-            import { env } from 'adex/env'
-      
-            import 'virtual:adex:font.css'
-            import 'virtual:adex:global.css'
-            
-            const __dirname = dirname(fileURLToPath(import.meta.url))
-      
-            const PORT = parseInt(env.get('PORT', '3000'), 10)
-            const HOST = env.get('HOST', 'localhost')
-      
-            const paths = {
-              assets: join(__dirname, './assets'),
-              islands: join(__dirname, './islands'),
-              client: join(__dirname, '../client'),
-            }
-            
-            function getServerManifest() {
-              const manifestPath = join(__dirname, 'manifest.json')
-              if (existsSync(manifestPath)) {
-                const manifestFile = readFileSync(manifestPath, 'utf8')
-                return parseManifest(manifestFile)
+          // virtual:adex:server — delegate to adapter.serverEntry() so adapters
+          // own their own bootstrap code. ensureAdapter() handles the default.
+          {
+            name: 'adex-virtual-server-entry',
+            enforce: 'pre',
+            resolveId(id) {
+              if (
+                id === 'virtual:adex:server' ||
+                id === '/virtual:adex:server'
+              ) {
+                return '\0virtual:adex:server'
               }
-              return {}
-            }
-            
-            function getClientManifest() {
-              const manifestPath = join(__dirname, '../client/manifest.json')
-              if (existsSync(manifestPath)) {
-                const manifestFile = readFileSync(manifestPath, 'utf8')
-                return parseManifest(manifestFile)
-              }
-              return {}
-            }
-      
-            function parseManifest(manifestString) {
-              try {
-                const manifestJSON = JSON.parse(manifestString)
-                return manifestJSON
-              } catch (err) {
-                return {}
-              }
-            }
-      
-            const server = createServer({
-              port: PORT,
-              host: HOST,
-              adex:{
-                manifests:{server:getServerManifest(),client:getClientManifest()},
-                paths,
-              }
-            })
-            
-            if ('run' in server) {
-              server.run()
-            }
-            
-            export default server.fetch
-            `
-          ),
+            },
+            async load(id) {
+              if (id !== '\0virtual:adex:server') return
+              const resolved = await ensureAdapter(adapter)
+              return resolved.serverEntry({ islands })
+            },
+          },
+          // Emit adex.manifest.json into the server output so the adapter
+          // kernel knows at runtime whether a client bundle was built.
+          {
+            name: 'adex-manifest-sidecar',
+            generateBundle() {
+              this.emitFile({
+                type: 'asset',
+                fileName: 'adex.manifest.json',
+                source: JSON.stringify({
+                  client: {
+                    bundle: !islands,
+                    islands: !!islands,
+                    manifestPath: '../client/manifest.json',
+                    outDir: '../client',
+                  },
+                }),
+              })
+            },
+          },
           addFontsPlugin(fonts),
           islands && adexIslandsBuilder(),
           ...sanitizedPlugins,
