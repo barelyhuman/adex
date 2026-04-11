@@ -70,9 +70,53 @@ async function fetchResponseToNode(response, res) {
 export function node(options = {}) {
   return {
     name: 'adex-adapter-node',
-    module: 'adex-adapter-node',
     devServerPlugin({ islands }) {
       return createNodeDevServerPlugin({ islands })
+    },
+    serverEntry({ islands }) {
+      return `import { createServer } from 'adex-adapter-node'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
+import { env } from 'adex/env'
+
+import 'virtual:adex:font.css'
+import 'virtual:adex:global.css'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+const PORT = parseInt(env.get('PORT', '3000'), 10)
+const HOST = env.get('HOST', 'localhost')
+
+function readJSON(p) {
+  try { return JSON.parse(readFileSync(p, 'utf8')) } catch { return {} }
+}
+
+const adexManifest = readJSON(join(__dirname, 'adex.manifest.json'))
+const serverManifest = readJSON(join(__dirname, 'manifest.json'))
+const clientManifest = adexManifest?.client?.bundle
+  ? readJSON(join(join(__dirname, adexManifest.client.manifestPath)))
+  : {}
+
+const paths = {
+  assets: join(__dirname, './assets'),
+  islands: join(__dirname, './islands'),
+  client: join(__dirname, adexManifest?.client?.outDir ?? '../client'),
+}
+
+const server = createServer({
+  port: PORT,
+  host: HOST,
+  adex: {
+    manifests: { server: serverManifest, client: clientManifest },
+    paths,
+    client: adexManifest?.client ?? { bundle: false, islands: false },
+  },
+})
+
+if ('run' in server) { server.run() }
+export default server.fetch
+`
     },
   }
 }

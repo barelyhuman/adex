@@ -11,13 +11,16 @@ export interface AdapterClientInfo {
 export interface AdapterConfig {
   /** npm package name — added to ssr.noExternal so it bundles into the server output */
   name: string
-  /** the import specifier used in the generated virtual:adex:server entry */
-  module: string
   /**
    * Returns a Vite plugin that handles dev-mode request serving for this adapter.
    * Called by the core adex() plugin with the same islands flag.
    */
   devServerPlugin: (options: { islands: boolean }) => Plugin
+  /**
+   * Returns the source code string for the virtual:adex:server entry point.
+   * Core injects this verbatim — all runtime bootstrap logic lives here.
+   */
+  serverEntry: (options: { islands: boolean }) => string
 }
 
 export interface AdexOptions {

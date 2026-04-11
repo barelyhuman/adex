@@ -24,55 +24,72 @@ const islandsDir = join(cwd, '.islands')
 let runningIslandBuild = false
 
 /**
- * Generate the virtual:adex:server entry code for a given adapter module.
- * Reads adex.manifest.json at runtime to discover client build info.
- * @param {string} adapterModule - the import specifier for the adapter
- * @returns {string}
+ * Resolve the adapter, defaulting to adex-adapter-node if none is provided.
+ * Cached after first resolution so it is only imported once per Vite session.
+ * Throws a clear, actionable error if the default cannot be found.
+ * @param {import("./vite.js").AdapterConfig | undefined} adapter
+ * @returns {Promise<import("./vite.js").AdapterConfig>}
  */
-function generateServerEntry(adapterModule) {
-  return `import { createServer } from '${adapterModule}'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { readFileSync } from 'node:fs'
-import { env } from 'adex/env'
-
-import 'virtual:adex:font.css'
-import 'virtual:adex:global.css'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-
-const PORT = parseInt(env.get('PORT', '3000'), 10)
-const HOST = env.get('HOST', 'localhost')
-
-function readJSON(p) {
-  try { return JSON.parse(readFileSync(p, 'utf8')) } catch { return {} }
+async function ensureAdapter(adapter) {
+  if (adapter) return adapter
+  try {
+    const mod = await import('adex-adapter-node')
+    return mod.node()
+  } catch {
+    throw new Error(
+      "[adex] No adapter was provided and 'adex-adapter-node' could not be found.\n" +
+        'Install it:       npm add adex-adapter-node\n' +
+        'Or pass it explicitly:  adex({ adapter: node() })'
+    )
+  }
 }
 
-const adexManifest = readJSON(join(__dirname, 'adex.manifest.json'))
-const serverManifest = readJSON(join(__dirname, 'manifest.json'))
-const clientManifest = adexManifest?.client?.bundle
-  ? readJSON(join(__dirname, adexManifest.client.manifestPath))
-  : {}
+/**
+ * Creates a proxy Vite plugin that forwards all dev-server hooks to the
+ * adapter's devServerPlugin. The adapter is resolved lazily on first use so
+ * that the default (adex-adapter-node) can be imported asynchronously when no
+ * adapter is explicitly provided.
+ *
+ * @param {{ adapter: import("./vite.js").AdapterConfig | undefined, islands: boolean }} options
+ * @returns {import("vite").Plugin}
+ */
+function createAdapterDevServerPlugin({ adapter, islands }) {
+  /** @type {import("vite").Plugin | null} */
+  let inner = null
 
-const paths = {
-  assets: join(__dirname, './assets'),
-  islands: join(__dirname, './islands'),
-  client: join(__dirname, adexManifest?.client?.outDir ?? '../client'),
-}
+  async function getInner() {
+    if (inner) return inner
+    const resolved = await ensureAdapter(adapter)
+    inner = resolved.devServerPlugin({ islands })
+    return inner
+  }
 
-const server = createServer({
-  port: PORT,
-  host: HOST,
-  adex: {
-    manifests: { server: serverManifest, client: clientManifest },
-    paths,
-    client: adexManifest?.client ?? { bundle: false, islands: false },
-  },
-})
-
-if ('run' in server) { server.run() }
-export default server.fetch
-`
+  return {
+    name: 'adex-adapter-dev-server',
+    apply: 'serve',
+    enforce: 'pre',
+    async config(...args) {
+      const p = await getInner()
+      return p.config?.call(this, ...args)
+    },
+    async configResolved(...args) {
+      const p = await getInner()
+      return p.configResolved?.call(this, ...args)
+    },
+    async resolveId(...args) {
+      const p = await getInner()
+      return p.resolveId?.call(this, ...args)
+    },
+    configureServer(server) {
+      // configureServer must return a function (or void) synchronously in
+      // Vite's plugin contract, but the return value can itself be async.
+      return async () => {
+        const plugin = await getInner()
+        const result = plugin.configureServer?.call(this, server)
+        if (typeof result === 'function') await result()
+      }
+    },
+  }
 }
 
 /**
@@ -80,8 +97,6 @@ export default server.fetch
  * @returns {(import("vite").Plugin)[]}
  */
 export function adex({ fonts, islands = false, ssr = true, adapter } = {}) {
-  const adapterModule = adapter?.module ?? 'adex-adapter-node'
-
   // @ts-expect-error probably because of the `.filter`
   return [
     preactPages({
@@ -111,12 +126,28 @@ export function adex({ fonts, islands = false, ssr = true, adapter } = {}) {
       'virtual:adex:handler',
       readFileSync(join(__dirname, '../runtime/handler.js'), 'utf8')
     ),
-    createVirtualModule(
-      'virtual:adex:server',
-      generateServerEntry(adapterModule)
-    ),
+    // virtual:adex:server — content is adapter-owned, resolved lazily so the
+    // default adapter (adex-adapter-node) can be imported async if not provided.
+    {
+      name: 'adex-virtual-server-entry',
+      enforce: 'pre',
+      resolveId(id) {
+        if (id === 'virtual:adex:server' || id === '/virtual:adex:server') {
+          return '\0virtual:adex:server'
+        }
+      },
+      async load(id) {
+        if (id !== '\0virtual:adex:server') return
+        const resolved = await ensureAdapter(adapter)
+        return resolved.serverEntry({ islands })
+      },
+    },
     addFontsPlugin(fonts),
-    adapter?.devServerPlugin?.({ islands }),
+    // Dev-server plugin — adapter-owned. If no adapter is given, the default
+    // (adex-adapter-node) is resolved async on first hook invocation.
+    // We wrap it in a proxy plugin so all hooks (config, configResolved,
+    // resolveId, configureServer) are forwarded to the real plugin object.
+    createAdapterDevServerPlugin({ adapter, islands }),
     adexBuildPrep({ islands }),
     adexClientBuilder({ ssr, islands }),
     islands && adexIslandsBuilder(),
@@ -550,10 +581,25 @@ function adexServerBuilder({ fonts, adapter, islands }) {
             'virtual:adex:handler',
             readFileSync(join(__dirname, '../runtime/handler.js'), 'utf8')
           ),
-          createVirtualModule(
-            'virtual:adex:server',
-            generateServerEntry(adapter?.module ?? 'adex-adapter-node')
-          ),
+          // virtual:adex:server — delegate to adapter.serverEntry() so adapters
+          // own their own bootstrap code. ensureAdapter() handles the default.
+          {
+            name: 'adex-virtual-server-entry',
+            enforce: 'pre',
+            resolveId(id) {
+              if (
+                id === 'virtual:adex:server' ||
+                id === '/virtual:adex:server'
+              ) {
+                return '\0virtual:adex:server'
+              }
+            },
+            async load(id) {
+              if (id !== '\0virtual:adex:server') return
+              const resolved = await ensureAdapter(adapter)
+              return resolved.serverEntry({ islands })
+            },
+          },
           // Emit adex.manifest.json into the server output so the adapter
           // kernel knows at runtime whether a client bundle was built.
           {
