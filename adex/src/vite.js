@@ -544,11 +544,25 @@ function adexServerBuilder({ fonts, adapter, islands }) {
         .filter(d => !d.name.startsWith('vite:'))
         .filter(d => !d.name.startsWith('adex-'))
 
+      // Resolve adapter early so we can call rollupOptions() below.
+      const resolvedAdapter = await ensureAdapter(adapter)
+
+      // Base Rollup options. The adapter may extend these via rollupOptions().
+      const baseRollupOptions = {
+        input: {
+          index: input,
+        },
+        external: ['adex/ssr', /^jsr:/, /^npm:/],
+      }
+      const finalRollupOptions = resolvedAdapter.rollupOptions
+        ? resolvedAdapter.rollupOptions(baseRollupOptions)
+        : baseRollupOptions
+
       await build({
         configFile: false,
         ssr: {
           external: ['preact', 'adex', 'preact-render-to-string'],
-          noExternal: adapter?.name ? [adapter.name] : [],
+          noExternal: resolvedAdapter?.name ? [resolvedAdapter.name] : [],
         },
         resolve: cfg.resolve,
         appType: 'custom',
@@ -596,8 +610,7 @@ function adexServerBuilder({ fonts, adapter, islands }) {
             },
             async load(id) {
               if (id !== '\0virtual:adex:server') return
-              const resolved = await ensureAdapter(adapter)
-              return resolved.serverEntry({ islands })
+              return resolvedAdapter.serverEntry({ islands })
             },
           },
           // Emit adex.manifest.json into the server output so the adapter
@@ -635,7 +648,7 @@ function adexServerBuilder({ fonts, adapter, islands }) {
             input: {
               index: input,
             },
-            external: ['adex/ssr'],
+            external: ['adex/ssr', /^http:/, /^npm:/, /^jsr:/],
           },
         },
       })

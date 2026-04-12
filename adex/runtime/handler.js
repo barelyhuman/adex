@@ -59,7 +59,7 @@ export async function handler(request) {
     const routeParams = getRouteParams(baseURL, matchedInPages)
 
     // @ts-expect-error
-    global.location = new URL(request.url)
+    globalThis.location = new URL(request.url)
 
     const context = { request }
     await emitToHooked(CONSTANTS.beforePageRender, context)
@@ -75,9 +75,7 @@ export async function handler(request) {
       title,
       lang,
       entryPage: matchedInPages.route,
-      routeParams: Buffer.from(JSON.stringify(routeParams), 'utf8').toString(
-        'base64'
-      ),
+      routeParams: btoa(JSON.stringify(routeParams)),
       body: rendered,
     })
 

@@ -14,6 +14,7 @@
   "dependencies": {
     "@preact/signals": "^1.3.0",
     "adex-adapter-node": "workspace:*",
+    "adex-adapter-deno": "workspace:*",
     "preact": "^10.24.2"
   },
   "devDependencies": {

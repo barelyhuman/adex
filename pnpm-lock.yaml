@@ -214,13 +214,26 @@ importers:
         specifier: ^1.15.0
         version: 1.15.0
 
-  packages/adapters/node: {}
+  packages/adapters/deno:
+    dependencies:
+      adex:
+        specifier: workspace:*
+        version: link:../../../adex
+
+  packages/adapters/node:
+    dependencies:
+      adex:
+        specifier: workspace:*
+        version: link:../../../adex
 
   playground:
     dependencies:
       '@preact/signals':
         specifier: ^1.3.0
         version: 1.3.4(preact@10.29.1)
+      adex-adapter-deno:
+        specifier: workspace:*
+        version: link:../packages/adapters/deno
       adex-adapter-node:
         specifier: workspace:*
         version: link:../packages/adapters/node

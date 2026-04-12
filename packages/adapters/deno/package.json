@@ -1,13 +1,13 @@
 {
-  "name": "adex-adapter-node",
+  "name": "adex-adapter-deno",
   "version": "0.0.21",
-  "description": "Node.js adapter for Adex, enabling minimal server-side rendering and integration with Preact.",
+  "description": "Deno adapter for Adex, enabling server-side rendering via Deno.serve.",
   "keywords": [
     "adex",
     "preact",
     "minimal",
     "server",
-    "node",
+    "deno",
     "ssr",
     "adapter"
   ],
@@ -20,7 +20,7 @@
   "bugs": {
     "url": "https://github.com/barelyhuman/adex/issues"
   },
-  "homepage": "https://github.com/barelyhuman/adex/tree/main/packages/adapters/node",
+  "homepage": "https://github.com/barelyhuman/adex/tree/main/packages/adapters/deno",
   "type": "module",
   "main": "./lib/index.js",
   "exports": {
@@ -33,7 +33,7 @@
     "lib"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "deno": ">=1.40.0"
   },
   "funding": {
     "type": "github",

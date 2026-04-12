@@ -1,5 +1,6 @@
 import { UserConfig, Plugin } from 'vite'
 import type { Options as FontOptions } from './fonts.js'
+import type { RollupOptions } from 'rollup'
 
 export interface AdapterClientInfo {
   bundle: boolean
@@ -21,6 +22,13 @@ export interface AdapterConfig {
    * Core injects this verbatim — all runtime bootstrap logic lives here.
    */
   serverEntry: (options: { islands: boolean }) => string
+  /**
+   * Optional hook to extend or override the Rollup options used in the SSR
+   * server build. The base options are passed in; return the final options.
+   * Use this to add extra `external` patterns (e.g. /^https?:\/\//) or set
+   * `output.preserveModules: true` for runtimes like Deno.
+   */
+  rollupOptions?: (base: RollupOptions) => RollupOptions
 }
 
 export interface AdexOptions {
