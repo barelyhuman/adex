@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import { adex } from 'adex'
+import { node } from 'adex-adapter-node'
 import preact from '@preact/preset-vite'
 
 export default defineConfig({
@@ -7,6 +8,7 @@ export default defineConfig({
     adex({
       islands: false,
       ssr: false,
+      adapter: node(),
     }),
     preact(),
   ],

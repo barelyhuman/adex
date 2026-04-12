@@ -11,7 +11,10 @@ exports["devMode ssr minimal > gives a static response 1"] = `"
     
     
   
-      </head>
+      
+              <link rel="preload" href="/virtual:adex:global.css" as="style" onload="this.rel='stylesheet'" />
+              
+              </head>
       <body>
         <div id="app"><h1>Hello World</h1></div>
       <script type='module' src="/virtual:adex:client"></script></body>
@@ -31,7 +34,10 @@ exports["devMode ssr minimal > gives a static response 2"] = `"
     
     
   
-      </head>
+      
+              <link rel="preload" href="/virtual:adex:global.css" as="style" onload="this.rel='stylesheet'" />
+              
+              </head>
       <body>
         <div id="app"><h2>About</h2></div>
       <script type='module' src="/virtual:adex:client"></script></body>

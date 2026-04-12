@@ -21,3 +21,18 @@ export type ServerResponse = HTTPServerResponse & {
 
 export function prepareRequest(req: IncomingMessage): void
 export function prepareResponse(res: ServerResponse): void
+
+/**
+ * Convert a Node.js IncomingMessage to a Fetch API Request.
+ * Used by adapter kernels to bridge from Node HTTP to Fetch.
+ */
+export function nodeRequestToFetch(req: HTTPIncomingMessage): Promise<Request>
+
+/**
+ * Write a Fetch API Response to a Node.js ServerResponse.
+ * Skips internal x-adex-* headers. Used by adapter kernels.
+ */
+export function fetchResponseToNode(
+  response: Response,
+  res: HTTPServerResponse
+): Promise<void>

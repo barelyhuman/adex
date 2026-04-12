@@ -1,5 +1,4 @@
 import { CONSTANTS, emitToHooked } from 'adex/hook'
-import { prepareRequest, prepareResponse } from 'adex/http'
 import { toStatic } from 'adex/ssr'
 import { renderToStringAsync } from 'adex/utils/isomorphic'
 import { h } from 'preact'
@@ -14,14 +13,17 @@ import { routes as pageRoutes } from '~routes'
 
 const html = String.raw
 
-export async function handler(req, res) {
-  res.statusCode = 200
-
-  prepareRequest(req)
-  prepareResponse(res)
-
-  const [url, search] = req.url.split('?')
-  const baseURL = normalizeRequestUrl(url)
+/**
+ * Core request handler — Fetch API native.
+ * Receives a standard Request, returns a standard Response.
+ * Page responses carry an `x-adex-page-route` header so the adapter
+ * kernel can inject manifest assets before sending to the client.
+ * @param {Request} request
+ * @returns {Promise<Response>}
+ */
+export async function handler(request) {
+  const { pathname } = new URL(request.url)
+  const baseURL = normalizeRequestUrl(pathname)
 
   const { metas, links, title, lang } = toStatic()
 
@@ -29,32 +31,24 @@ export async function handler(req, res) {
     const matchedInAPI = apiRoutes.find(d => {
       return d.regex.pattern.test(baseURL)
     })
+
     if (matchedInAPI) {
       const module = await matchedInAPI.module()
-      const routeParams = getRouteParams(baseURL, matchedInAPI)
-      req.params = routeParams
-      const modifiableContext = {
-        req: req,
-        res: res,
-      }
-      await emitToHooked(CONSTANTS.beforeApiCall, modifiableContext)
+      const context = { request }
+      await emitToHooked(CONSTANTS.beforeApiCall, context)
       const handlerFn =
-        'default' in module ? module.default : (_, res) => res.end()
-      const serverHandler = async (req, res) => {
-        await handlerFn(req, res)
-        await emitToHooked(CONSTANTS.afterApiCall, { req, res })
-      }
-      return {
-        serverHandler,
-      }
+        'default' in module
+          ? module.default
+          : () => new Response('Not found', { status: 404 })
+      const response = await handlerFn(context.request)
+      await emitToHooked(CONSTANTS.afterApiCall, {
+        request: context.request,
+        response,
+      })
+      return response
     }
-    return {
-      serverHandler: async (_, res) => {
-        res.statusCode = 404
-        res.end('Not found')
-        await emitToHooked(CONSTANTS.afterApiCall, { req, res })
-      },
-    }
+
+    return new Response('Not found', { status: 404 })
   }
 
   const matchedInPages = pageRoutes.find(d => {
@@ -65,15 +59,13 @@ export async function handler(req, res) {
     const routeParams = getRouteParams(baseURL, matchedInPages)
 
     // @ts-expect-error
-    global.location = new URL(req.url, 'http://localhost')
+    globalThis.location = new URL(request.url)
 
-    const modifiableContext = {
-      req: req,
-    }
-    await emitToHooked(CONSTANTS.beforePageRender, modifiableContext)
+    const context = { request }
+    await emitToHooked(CONSTANTS.beforePageRender, context)
 
     const rendered = await renderToStringAsync(
-      h(App, { url: modifiableContext.req.url }),
+      h(App, { url: new URL(context.request.url).pathname }),
       {}
     )
 
@@ -83,30 +75,36 @@ export async function handler(req, res) {
       title,
       lang,
       entryPage: matchedInPages.route,
-      routeParams: Buffer.from(JSON.stringify(routeParams), 'utf8').toString(
-        'base64'
-      ),
+      routeParams: btoa(JSON.stringify(routeParams)),
       body: rendered,
     })
 
-    modifiableContext.html = htmlString
-    await emitToHooked(CONSTANTS.afterPageRender, modifiableContext)
-    htmlString = modifiableContext.html
-    return {
-      html: htmlString,
-      pageRoute: matchedInPages.route,
-    }
+    const pageContext = { request: context.request, html: htmlString }
+    await emitToHooked(CONSTANTS.afterPageRender, pageContext)
+    htmlString = pageContext.html
+
+    return new Response(htmlString, {
+      status: 200,
+      headers: {
+        'content-type': 'text/html',
+        'x-adex-page-route': matchedInPages.route,
+      },
+    })
   }
 
-  return {
-    html: HTMLTemplate({
+  return new Response(
+    HTMLTemplate({
       metas,
       links,
       title,
       lang,
       body: '404 | Not Found',
     }),
-  }
+    {
+      status: 404,
+      headers: { 'content-type': 'text/html' },
+    }
+  )
 }
 
 function HTMLTemplate({

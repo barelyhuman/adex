@@ -1,20 +1,89 @@
 import { existsSync } from 'node:fs'
 import http from 'node:http'
-
-import { sirv, useMiddleware } from 'adex/ssr'
-
-import { handler } from 'virtual:adex:handler'
+import { createNodeDevServerPlugin } from './dev.js'
+import { nodeRequestToFetch, fetchResponseToNode } from 'adex/http'
 
 let islandMode = false
 
-function createHandler({ manifests, paths }) {
+/**
+ * Adapter factory — pass to adex({ adapter: node() }) in vite.config.js
+ * Returns an AdapterConfig object the core framework uses at build time.
+ * @param {import('./index.d.ts').NodeAdapterOptions} [options]
+ * @returns {import('./index.d.ts').AdapterConfig}
+ */
+export function node(options = {}) {
+  return {
+    name: 'adex-adapter-node',
+    devServerPlugin({ islands }) {
+      return createNodeDevServerPlugin({ islands })
+    },
+    serverEntry({ islands }) {
+      return `import { createServer } from 'adex-adapter-node'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
+import { env } from 'adex/env'
+
+import 'virtual:adex:font.css'
+import 'virtual:adex:global.css'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+const PORT = parseInt(env.get('PORT', '3000'), 10)
+const HOST = env.get('HOST', 'localhost')
+
+function readJSON(p) {
+  try { return JSON.parse(readFileSync(p, 'utf8')) } catch { return {} }
+}
+
+const adexManifest = readJSON(join(__dirname, 'adex.manifest.json'))
+const serverManifest = readJSON(join(__dirname, 'manifest.json'))
+const clientManifest = adexManifest?.client?.bundle
+  ? readJSON(join(join(__dirname, adexManifest.client.manifestPath)))
+  : {}
+
+const paths = {
+  assets: join(__dirname, './assets'),
+  islands: join(__dirname, './islands'),
+  client: join(__dirname, adexManifest?.client?.outDir ?? '../client'),
+}
+
+const server = createServer({
+  port: PORT,
+  host: HOST,
+  adex: {
+    manifests: { server: serverManifest, client: clientManifest },
+    paths,
+    client: adexManifest?.client ?? { bundle: false, islands: false },
+  },
+})
+
+if ('run' in server) { server.run() }
+export default server.fetch
+`
+    },
+  }
+}
+
+/**
+ * @param {{ manifests: object, paths: object, client: import('./index.d.ts').AdapterClientInfo }} adexConfig
+ */
+async function createHandler({
+  manifests,
+  paths,
+  client = { bundle: true, islands: false },
+}) {
+  const { sirv, useMiddleware } = await import('adex/ssr')
+  // @ts-expect-error injected by vite
+  const { handler } = await import('virtual:adex:handler')
+
   const serverAssets = sirv(paths.assets, {
     maxAge: 31536000,
     immutable: true,
     onNoMatch: defaultHandler,
   })
 
-  let islandsWereGenerated = existsSync(paths.islands)
+  let islandsWereGenerated = client.islands && existsSync(paths.islands)
 
   // @ts-ignore
   let islandAssets = (req, res, next) => {
@@ -30,7 +99,7 @@ function createHandler({ manifests, paths }) {
     })
   }
 
-  let clientWasGenerated = existsSync(paths.client)
+  let clientWasGenerated = client.bundle && existsSync(paths.client)
 
   // @ts-ignore
   let clientAssets = (req, res, next) => {
@@ -46,19 +115,24 @@ function createHandler({ manifests, paths }) {
   }
 
   async function defaultHandler(req, res) {
-    const { html: template, pageRoute, serverHandler } = await handler(req, res)
-    if (serverHandler) {
-      return serverHandler(req, res)
+    const fetchRequest = await nodeRequestToFetch(req)
+    const response = await handler(fetchRequest)
+    const pageRoute = response.headers.get('x-adex-page-route')
+
+    if (!pageRoute) {
+      // API response or 404 — write directly
+      await fetchResponseToNode(response, res)
+      return
     }
 
-    const templateWithDeps = addDependencyAssets(
-      template,
+    // Page response — inject manifest CSS/JS assets
+    const html = await response.text()
+    const finalHTML = addDependencyAssets(
+      html,
       pageRoute,
       manifests.server,
       manifests.client
     )
-
-    const finalHTML = templateWithDeps
     res.setHeader('content-type', 'text/html')
     res.write(finalHTML)
     res.end()
@@ -88,40 +162,11 @@ function createHandler({ manifests, paths }) {
   )
 }
 
-// function parseManifest(manifestString) {
-//   try {
-//     const manifestJSON = JSON.parse(manifestString)
-//     return manifestJSON
-//   } catch (err) {
-//     return {}
-//   }
-// }
-
-// function getServerManifest() {
-//   const manifestPath = join(__dirname, 'manifest.json')
-//   if (existsSync(manifestPath)) {
-//     const manifestFile = readFileSync(manifestPath, 'utf8')
-//     return parseManifest(manifestFile)
-//   }
-//   return {}
-// }
-
-// function getClientManifest() {
-//   const manifestPath = join(__dirname, '../client/manifest.json')
-//   if (existsSync(manifestPath)) {
-//     const manifestFile = readFileSync(manifestPath, 'utf8')
-//     return parseManifest(manifestFile)
-//   }
-//   return {}
-// }
-
 function manifestToHTML(manifest, filePath) {
   let links = []
   let scripts = []
 
-  // TODO: move it up the chain
   const rootServerFile = 'virtual:adex:server'
-  // if root manifest, also add it's css imports in
   if (manifest[rootServerFile]) {
     const graph = manifest[rootServerFile]
     links = links.concat(
@@ -135,9 +180,7 @@ function manifestToHTML(manifest, filePath) {
     )
   }
 
-  // TODO: move it up the chain
   const rootClientFile = 'virtual:adex:client'
-  // if root manifest, also add it's css imports in
   if (!islandMode && manifest[rootClientFile]) {
     const graph = manifest[rootClientFile]
     links = links.concat(
@@ -229,14 +272,24 @@ export const createServer = ({
       client: {},
     },
     paths: {},
+    client: { bundle: true, islands: false },
   },
 } = {}) => {
-  const handler = createHandler(adex)
-  const server = http.createServer(handler)
+  // createHandler is async (uses dynamic imports); wrap in a lazy-init server
+  let server
+
+  async function getServer() {
+    if (!server) {
+      const handler = await createHandler(adex)
+      server = http.createServer(handler)
+    }
+    return server
+  }
 
   return {
-    run() {
-      return server.listen(port, host, () => {
+    async run() {
+      const s = await getServer()
+      return s.listen(port, host, () => {
         console.log(`Listening on ${host}:${port}`)
       })
     },

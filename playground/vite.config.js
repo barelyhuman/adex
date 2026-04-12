@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import preact from '@preact/preset-vite'
 import { adex } from 'adex'
+import { node } from 'adex-adapter-node'
 import { providers } from 'adex/fonts'
 
 // https://vitejs.dev/config/
@@ -8,6 +9,7 @@ export default defineConfig({
   plugins: [
     adex({
       islands: false,
+      adapter: node(),
       fonts: {
         providers: [providers.google()],
         families: [
