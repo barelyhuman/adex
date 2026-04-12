@@ -6,6 +6,7 @@ packages:
   - adex
   - create-adex
   - playground
+  - playground-*
   - packages/**/*
   - adex/tests/**/*
 
