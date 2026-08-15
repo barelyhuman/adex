@@ -39,7 +39,11 @@ export async function handler(req, res) {
       }
       await emitToHooked(CONSTANTS.beforeApiCall, modifiableContext)
       const handlerFn =
-        'default' in module ? module.default : (_, res) => res.end()
+        typeof module[req.method] === 'function'
+          ? module[req.method]
+          : 'default' in module
+            ? module.default
+            : (_, res) => res.end()
       const serverHandler = async (req, res) => {
         await handlerFn(req, res)
         await emitToHooked(CONSTANTS.afterApiCall, { req, res })
