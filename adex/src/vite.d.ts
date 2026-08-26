@@ -5,10 +5,12 @@ export type Adapters = 'node'
 
 export interface AdexKernelOptions {
   /**
-   * Production static file server.
-   * - omitted: `sirv`
-   * - `false`: no-op (requests fall through to SSR/API)
-   * - string: module id whose default export is sirv-compatible `(dir, opts) => middleware`
+   * Production static serving.
+   * - omitted: default `createStaticMiddlewares` (sirv + `/assets`/`/islands` URL rewrites)
+   * - `false`: no static middlewares
+   * - string: module id whose default export is `({ paths }) => middleware | middleware[]`
+   *
+   * Custom modules own path mounting entirely and do not inherit sirv URL rewriting.
    */
   staticServer?: false | string
 }

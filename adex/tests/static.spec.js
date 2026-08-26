@@ -10,28 +10,29 @@ import {
 } from '../src/static.js'
 
 describe('resolveStaticServerModuleSource', () => {
-  it('defaults to sirv', () => {
+  it('defaults to createStaticMiddlewares from adex/static', () => {
     assert.strictEqual(
       resolveStaticServerModuleSource(),
-      `export { default } from 'sirv'\n`
+      `export { createStaticMiddlewares as default } from 'adex/static'\n`
     )
     assert.strictEqual(
       resolveStaticServerModuleSource(undefined),
-      `export { default } from 'sirv'\n`
+      `export { createStaticMiddlewares as default } from 'adex/static'\n`
     )
   })
 
-  it('disables with a no-op factory when false', () => {
+  it('disables with an empty middleware list when false', () => {
     const source = resolveStaticServerModuleSource(false)
-    assert.match(source, /export default function serve/)
-    assert.match(source, /next\(\)/)
+    assert.match(source, /export default function staticServer/)
+    assert.match(source, /return \[\]/)
     assert.doesNotMatch(source, /sirv/)
+    assert.doesNotMatch(source, /createStaticMiddlewares/)
   })
 
   it('re-exports a custom module id', () => {
     assert.strictEqual(
-      resolveStaticServerModuleSource('./src/my-serve.js'),
-      `export { default } from "./src/my-serve.js"\n`
+      resolveStaticServerModuleSource('./src/my-static.js'),
+      `export { default } from "./src/my-static.js"\n`
     )
   })
 })
@@ -79,5 +80,49 @@ describe('createStaticMiddlewares', () => {
 
     await handler({ url: '/assets/a.txt' }, {})
     assert.strictEqual(hitApp, true)
+  })
+
+  it('rewrites asset URLs only inside the default stack', async () => {
+    /** @type {string[]} */
+    const seenUrls = []
+    const serve = () => (req, _res, next) => {
+      seenUrls.push(req.url)
+      next()
+    }
+
+    const handler = useMiddleware(
+      ...createStaticMiddlewares({
+        paths: { assets: '/tmp/assets-does-not-need-to-exist-for-serve-mock' },
+        serve,
+      }),
+      async () => {}
+    )
+
+    // paths.assets is truthy so serve() is used even if dir missing on disk
+    await handler({ url: '/assets/app.js' }, {})
+    assert.deepStrictEqual(seenUrls, ['/app.js'])
+  })
+})
+
+describe('custom kernel.staticServer contract', () => {
+  it('receives original URLs with no adex rewrite when replacing the factory', async () => {
+    /** @type {string[]} */
+    const seenUrls = []
+
+    const staticServer = ({ paths }) => {
+      assert.ok(paths)
+      return (req, _res, next) => {
+        seenUrls.push(req.url)
+        next()
+      }
+    }
+
+    const middlewares = staticServer({ paths: { assets: '/x' } })
+    const list = Array.isArray(middlewares) ? middlewares : [middlewares]
+
+    const handler = useMiddleware(...list, async () => {})
+
+    await handler({ url: '/assets/app.js' }, {})
+    assert.deepStrictEqual(seenUrls, ['/assets/app.js'])
   })
 })

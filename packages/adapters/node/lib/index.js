@@ -8,7 +8,11 @@ import { handler } from 'virtual:adex:handler'
 
 let islandMode = false
 
-function createHandler({ manifests, paths, serve }) {
+function createHandler({
+  manifests,
+  paths,
+  staticServer = createStaticMiddlewares,
+}) {
   islandMode = Boolean(paths.islands && existsSync(paths.islands))
 
   async function defaultHandler(req, res) {
@@ -30,10 +34,12 @@ function createHandler({ manifests, paths, serve }) {
     res.end()
   }
 
-  return useMiddleware(
-    ...createStaticMiddlewares({ paths, serve }),
-    defaultHandler
-  )
+  const staticMiddlewares = staticServer({ paths })
+  const list = Array.isArray(staticMiddlewares)
+    ? staticMiddlewares
+    : [staticMiddlewares]
+
+  return useMiddleware(...list, defaultHandler)
 }
 
 // function parseManifest(manifestString) {

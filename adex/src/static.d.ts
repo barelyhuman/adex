@@ -9,25 +9,29 @@ export type StaticPaths = {
 
 export type ServeStatic = typeof sirv
 
-export type CreateStaticMiddlewaresOptions = {
-  paths?: StaticPaths
-  /** Static file server factory. Defaults to `sirv`. */
-  serve?: ServeStatic
-  /** Options passed to each `serve` call. */
-  options?: Parameters<ServeStatic>[1]
-}
-
 export type StaticMiddleware = (
   req: IncomingMessage,
   res: ServerResponse,
   next?: (err?: unknown) => void
 ) => unknown
 
+/** Full static stack factory — what `kernel.staticServer` modules must default-export. */
+export type StaticServer = (options: {
+  paths?: StaticPaths
+}) => StaticMiddleware | StaticMiddleware[]
+
+export type CreateStaticMiddlewaresOptions = {
+  paths?: StaticPaths
+  /** Only for the default sirv implementation. */
+  serve?: ServeStatic
+  options?: Parameters<ServeStatic>[1]
+}
+
 export function createStaticMiddlewares(
   options?: CreateStaticMiddlewaresOptions
 ): StaticMiddleware[]
 
-/** Virtual module source for `kernel.staticServer` (`false` | module id | default sirv). */
+/** Virtual module source for `kernel.staticServer`. */
 export function resolveStaticServerModuleSource(
   staticServer?: false | string
 ): string

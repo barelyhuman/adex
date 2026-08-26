@@ -1,13 +1,18 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
-type ServeStatic = (
-  dir: string,
-  opts?: Record<string, unknown>
-) => (
+type StaticMiddleware = (
   req: IncomingMessage,
   res: ServerResponse,
   next?: (err?: unknown) => void
 ) => unknown
+
+type StaticServer = (options: {
+  paths?: {
+    assets?: string
+    islands?: string
+    client?: string
+  }
+}) => StaticMiddleware | StaticMiddleware[]
 
 type AdexServerOptions = {
   manifests?: {
@@ -19,8 +24,8 @@ type AdexServerOptions = {
     islands?: string
     client?: string
   }
-  /** Static file server factory from `virtual:adex:static-server` (defaults to sirv). */
-  serve?: ServeStatic
+  /** From `virtual:adex:static-server` — `({ paths }) => middleware | middleware[]`. */
+  staticServer?: StaticServer
 }
 
 type ServerOut = {

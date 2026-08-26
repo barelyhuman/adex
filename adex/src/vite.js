@@ -38,7 +38,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { existsSync, readFileSync } from 'node:fs'
 import { env } from 'adex/env'
-import serve from 'virtual:adex:static-server'
+import staticServer from 'virtual:adex:static-server'
 
 import 'virtual:adex:font.css'
 import 'virtual:adex:global.css'
@@ -87,7 +87,7 @@ const server = createServer({
   adex: {
     manifests: { server: getServerManifest(), client: getClientManifest() },
     paths,
-    serve,
+    staticServer,
   },
 })
 
