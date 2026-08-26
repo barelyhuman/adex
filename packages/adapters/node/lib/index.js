@@ -1,49 +1,19 @@
 import { existsSync } from 'node:fs'
 import http from 'node:http'
 
-import { sirv, useMiddleware } from 'adex/ssr'
+import { useMiddleware } from 'adex/ssr'
+import { createStaticMiddlewares } from 'adex/static'
 
 import { handler } from 'virtual:adex:handler'
 
 let islandMode = false
 
-function createHandler({ manifests, paths }) {
-  const serverAssets = sirv(paths.assets, {
-    maxAge: 31536000,
-    immutable: true,
-    onNoMatch: defaultHandler,
-  })
-
-  let islandsWereGenerated = existsSync(paths.islands)
-
-  // @ts-ignore
-  let islandAssets = (req, res, next) => {
-    next()
-  }
-
-  if (islandsWereGenerated) {
-    islandMode = true
-    islandAssets = sirv(paths.islands, {
-      maxAge: 31536000,
-      immutable: true,
-      onNoMatch: defaultHandler,
-    })
-  }
-
-  let clientWasGenerated = existsSync(paths.client)
-
-  // @ts-ignore
-  let clientAssets = (req, res, next) => {
-    next()
-  }
-
-  if (clientWasGenerated) {
-    clientAssets = sirv(paths.client, {
-      maxAge: 31536000,
-      immutable: true,
-      onNoMatch: defaultHandler,
-    })
-  }
+function createHandler({
+  manifests,
+  paths,
+  staticServer = createStaticMiddlewares,
+}) {
+  islandMode = Boolean(paths.islands && existsSync(paths.islands))
 
   async function defaultHandler(req, res) {
     const { html: template, pageRoute, serverHandler } = await handler(req, res)
@@ -64,28 +34,12 @@ function createHandler({ manifests, paths }) {
     res.end()
   }
 
-  return useMiddleware(
-    async (req, res, next) => {
-      // @ts-expect-error shared-state between the middlewares
-      req.__originalUrl = req.url
-      // @ts-expect-error shared-state between the middlewares
-      req.url = req.__originalUrl.replace(/(\/?assets\/?)/, '/')
-      return serverAssets(req, res, next)
-    },
-    async (req, res, next) => {
-      // @ts-expect-error shared-state between the middlewares
-      req.url = req.__originalUrl.replace(/(\/?islands\/?)/, '/')
-      return islandAssets(req, res, next)
-    },
-    async (req, res, next) => {
-      return clientAssets(req, res, next)
-    },
-    async (req, res) => {
-      // @ts-expect-error shared-state between the middlewares
-      req.url = req.__originalUrl
-      return defaultHandler(req, res)
-    }
-  )
+  const staticMiddlewares = staticServer({ paths })
+  const list = Array.isArray(staticMiddlewares)
+    ? staticMiddlewares
+    : [staticMiddlewares]
+
+  return useMiddleware(...list, defaultHandler)
 }
 
 // function parseManifest(manifestString) {

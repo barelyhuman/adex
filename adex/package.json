@@ -64,6 +64,10 @@
       "types": "./src/ssr.d.ts",
       "import": "./src/ssr.js"
     },
+    "./static": {
+      "types": "./src/static.d.ts",
+      "import": "./src/static.js"
+    },
     "./head": {
       "types": "./src/head.d.ts",
       "import": "./src/head.js"
