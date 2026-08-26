@@ -10,14 +10,14 @@ import {
 } from '../src/static.js'
 
 describe('resolveStaticServerModuleSource', () => {
-  it('defaults to createStaticMiddlewares from adex/static', () => {
+  it('defaults to the adex/static plugin', () => {
     assert.strictEqual(
       resolveStaticServerModuleSource(),
-      `export { createStaticMiddlewares as default } from 'adex/static'\n`
+      `export { default } from 'adex/static'\n`
     )
     assert.strictEqual(
       resolveStaticServerModuleSource(undefined),
-      `export { createStaticMiddlewares as default } from 'adex/static'\n`
+      `export { default } from 'adex/static'\n`
     )
   })
 
@@ -26,7 +26,7 @@ describe('resolveStaticServerModuleSource', () => {
     assert.match(source, /export default function staticServer/)
     assert.match(source, /return \[\]/)
     assert.doesNotMatch(source, /sirv/)
-    assert.doesNotMatch(source, /createStaticMiddlewares/)
+    assert.doesNotMatch(source, /adex\/static/)
   })
 
   it('re-exports a custom module id', () => {

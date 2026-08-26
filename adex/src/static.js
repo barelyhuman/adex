@@ -7,15 +7,19 @@ const DEFAULT_SERVE_OPTIONS = {
 }
 
 /**
- * Default production static middleware (sirv + URL prefix rewrites for
- * `/assets` and `/islands`). Used when `kernel.staticServer` is omitted.
+ * Adex's default production static plugin.
  *
- * Custom `kernel.staticServer` modules replace this entire factory and do not
- * inherit the sirv-specific `__originalUrl` / path rewriting.
+ * Includes sirv plus the `/assets` and `/islands` URL-prefix rewrites that
+ * sirv needs when rooted at a build output directory. This is what runs when
+ * `kernel.staticServer` is omitted.
+ *
+ * Switch away with `adex({ kernel: { staticServer: './my-static.js' } })` or
+ * disable with `staticServer: false`. Custom factories do not inherit these
+ * rewrites — they receive the original `req.url`.
  *
  * @param {object} [options]
  * @param {{ assets?: string, islands?: string, client?: string }} [options.paths]
- * @param {typeof sirv} [options.serve] Only for the default implementation
+ * @param {typeof sirv} [options.serve]
  * @param {Parameters<typeof sirv>[1]} [options.options]
  * @returns {Array<(req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse, next?: Function) => any>}
  */
@@ -65,13 +69,16 @@ export function createStaticMiddlewares({
   ]
 }
 
+/** Default static plugin entry (same as `createStaticMiddlewares`). */
+export default createStaticMiddlewares
+
 function passthrough(_req, _res, next) {
   next()
 }
 
 /**
  * Virtual module source for `virtual:adex:static-server`.
- * Default export is `({ paths }) => middleware | middleware[]`.
+ * Resolves which static plugin to use (`adex/static` by default).
  *
  * @param {false | string | undefined} staticServer
  * @returns {string}
@@ -89,6 +96,6 @@ export function resolveStaticServerModuleSource(staticServer) {
 `
   }
 
-  return `export { createStaticMiddlewares as default } from 'adex/static'
+  return `export { default } from 'adex/static'
 `
 }

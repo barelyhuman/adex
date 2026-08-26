@@ -5,12 +5,12 @@ export type Adapters = 'node'
 
 export interface AdexKernelOptions {
   /**
-   * Production static serving.
-   * - omitted: default `createStaticMiddlewares` (sirv + `/assets`/`/islands` URL rewrites)
+   * Production static plugin.
+   * - omitted: adex default (`adex/static` — sirv + `/assets`/`/islands` rewrites)
    * - `false`: no static middlewares
    * - string: module id whose default export is `({ paths }) => middleware | middleware[]`
    *
-   * Custom modules own path mounting entirely and do not inherit sirv URL rewriting.
+   * Custom plugins own mounting and see the original `req.url` (no adex rewrites).
    */
   staticServer?: false | string
 }

@@ -15,23 +15,29 @@ export type StaticMiddleware = (
   next?: (err?: unknown) => void
 ) => unknown
 
-/** Full static stack factory — what `kernel.staticServer` modules must default-export. */
+/**
+ * Static plugin contract — default export of `adex/static` and of any module
+ * passed as `kernel.staticServer`.
+ */
 export type StaticServer = (options: {
   paths?: StaticPaths
 }) => StaticMiddleware | StaticMiddleware[]
 
 export type CreateStaticMiddlewaresOptions = {
   paths?: StaticPaths
-  /** Only for the default sirv implementation. */
   serve?: ServeStatic
   options?: Parameters<ServeStatic>[1]
 }
 
+/** Adex default static plugin (sirv + URL rewrites). */
 export function createStaticMiddlewares(
   options?: CreateStaticMiddlewaresOptions
 ): StaticMiddleware[]
 
-/** Virtual module source for `kernel.staticServer`. */
+declare const defaultStaticPlugin: typeof createStaticMiddlewares
+export default defaultStaticPlugin
+
+/** Virtual module source for `kernel.staticServer` (defaults to `adex/static`). */
 export function resolveStaticServerModuleSource(
   staticServer?: false | string
 ): string
