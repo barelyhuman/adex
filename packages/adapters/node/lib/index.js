@@ -8,7 +8,7 @@ import { handler } from 'virtual:adex:handler'
 
 let islandMode = false
 
-function createHandler({ manifests, paths }) {
+function createHandler({ manifests, paths, serve }) {
   islandMode = Boolean(paths.islands && existsSync(paths.islands))
 
   async function defaultHandler(req, res) {
@@ -30,7 +30,10 @@ function createHandler({ manifests, paths }) {
     res.end()
   }
 
-  return useMiddleware(...createStaticMiddlewares({ paths }), defaultHandler)
+  return useMiddleware(
+    ...createStaticMiddlewares({ paths, serve }),
+    defaultHandler
+  )
 }
 
 // function parseManifest(manifestString) {

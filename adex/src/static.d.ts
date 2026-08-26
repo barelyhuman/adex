@@ -26,3 +26,8 @@ export type StaticMiddleware = (
 export function createStaticMiddlewares(
   options?: CreateStaticMiddlewaresOptions
 ): StaticMiddleware[]
+
+/** Virtual module source for `kernel.staticServer` (`false` | module id | default sirv). */
+export function resolveStaticServerModuleSource(
+  staticServer?: false | string
+): string

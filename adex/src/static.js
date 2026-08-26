@@ -65,3 +65,29 @@ export function createStaticMiddlewares({
 function passthrough(_req, _res, next) {
   next()
 }
+
+/**
+ * Virtual module source for `virtual:adex:static-server`.
+ * Resolves `kernel.staticServer` from `adex()` options.
+ *
+ * @param {false | string | undefined} staticServer
+ * @returns {string}
+ */
+export function resolveStaticServerModuleSource(staticServer) {
+  if (staticServer === false) {
+    return `export default function serve() {
+  return function noop(_req, _res, next) {
+    next()
+  }
+}
+`
+  }
+
+  if (typeof staticServer === 'string' && staticServer.length > 0) {
+    return `export { default } from ${JSON.stringify(staticServer)}
+`
+  }
+
+  return `export { default } from 'sirv'
+`
+}
