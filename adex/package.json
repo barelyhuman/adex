@@ -68,10 +68,6 @@
       "types": "./src/head.d.ts",
       "import": "./src/head.js"
     },
-    "./hook": {
-      "types": "./src/hook.d.ts",
-      "import": "./src/hook.js"
-    },
     "./http": {
       "types": "./src/http.d.ts",
       "import": "./src/http.js"

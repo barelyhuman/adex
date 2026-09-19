@@ -1,9 +1,3 @@
-import { afterAPICall } from 'adex/hook'
-
-afterAPICall(ctx => {
-  console.log('called after api')
-})
-
 /**
  * @param {import("adex/http").IncomingMessage} req
  * @param {import("adex/http").ServerResponse} res

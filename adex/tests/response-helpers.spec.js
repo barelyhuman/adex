@@ -122,4 +122,77 @@ describe('HTTP Response Helpers', () => {
     assert.strictEqual(res.writtenData.length, 0)
     assert.strictEqual(res.headers['content-type'], undefined)
   })
+
+  it('html sets content-type and writes string', () => {
+    const res = new MockServerResponse()
+    prepareResponse(res)
+
+    res.html('<h1>Hello</h1>')
+
+    assert.strictEqual(res.headers['content-type'], 'text/html')
+    assert.strictEqual(res.writtenData[0], '<h1>Hello</h1>')
+    assert.strictEqual(res.ended, true)
+  })
+
+  it('html throws for non-string data', () => {
+    const res = new MockServerResponse()
+    prepareResponse(res)
+
+    assert.throws(() => res.html({ not: 'string' }), {
+      message: '[res.html] only accepts html string',
+    })
+  })
+
+  it('text writes string with text/plain content-type', () => {
+    const res = new MockServerResponse()
+    prepareResponse(res)
+
+    res.text('plain text')
+
+    assert.strictEqual(res.headers['content-type'], 'text/plain')
+    assert.strictEqual(res.writtenData[0], 'plain text')
+    assert.strictEqual(res.ended, true)
+  })
+
+  it('text stringifies non-string data', () => {
+    const res = new MockServerResponse()
+    prepareResponse(res)
+
+    res.text({ ok: true })
+
+    assert.strictEqual(res.headers['content-type'], 'text/plain')
+    assert.strictEqual(res.writtenData[0], JSON.stringify({ ok: true }))
+    assert.strictEqual(res.ended, true)
+  })
+
+  it('json writes stringified data with application/json content-type', () => {
+    const res = new MockServerResponse()
+    prepareResponse(res)
+
+    res.json({ pong: true })
+
+    assert.strictEqual(res.headers['content-type'], 'application/json')
+    assert.strictEqual(res.writtenData[0], JSON.stringify({ pong: true }))
+    assert.strictEqual(res.ended, true)
+  })
+
+  it('redirect sets Location and default 302 status', () => {
+    const res = new MockServerResponse()
+    prepareResponse(res)
+
+    res.redirect('/elsewhere')
+
+    assert.strictEqual(res.statusCode, 302)
+    assert.strictEqual(res.headers['Location'], '/elsewhere')
+  })
+
+  it('redirect accepts custom status code', () => {
+    const res = new MockServerResponse()
+    prepareResponse(res)
+
+    res.redirect('/elsewhere', 301)
+
+    assert.strictEqual(res.statusCode, 301)
+    assert.strictEqual(res.headers['Location'], '/elsewhere')
+  })
 })
