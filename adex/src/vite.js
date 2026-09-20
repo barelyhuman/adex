@@ -62,6 +62,11 @@ export function adex({
       'adex/app',
       readFileSync(join(__dirname, '../runtime/app.js'), 'utf8')
     ),
+    createUserDefaultVirtualModule(
+      'virtual:adex:hooks',
+      'export {}',
+      '/src/hooks'
+    ),
     createVirtualModule(
       'virtual:adex:handler',
       readFileSync(join(__dirname, '../runtime/handler.js'), 'utf8')
@@ -644,6 +649,11 @@ function adexServerBuilder({ fonts, adapter, islands }) {
             'virtual:adex:client',
             readFileSync(join(__dirname, '../runtime/client.js'), 'utf8'),
             '/src/_app'
+          ),
+          createUserDefaultVirtualModule(
+            'virtual:adex:hooks',
+            'export {}',
+            '/src/hooks'
           ),
           createVirtualModule(
             'virtual:adex:handler',

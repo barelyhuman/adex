@@ -80,6 +80,10 @@
       "types": "./src/fonts.d.ts",
       "import": "./src/fonts.js"
     },
+    "./hooks": {
+      "types": "./src/hooks.d.ts",
+      "import": "./src/hooks.js"
+    },
     ".": {
       "types": "./src/vite.d.ts",
       "import": "./src/vite.js"

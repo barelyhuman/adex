@@ -1,10 +1,12 @@
+import { CONSTANTS, emitToHooked, resetHooks } from 'adex/hooks'
 import { prepareRequest, prepareResponse } from 'adex/http'
 import { toStatic } from 'adex/ssr'
 import { renderToStringAsync } from 'adex/utils/isomorphic'
 import { h } from 'preact'
 
-// @ts-expect-error injected by vite
-import { App } from 'virtual:adex:client'
+resetHooks()
+await import('virtual:adex:hooks')
+const { App } = await import('virtual:adex:client')
 
 // @ts-expect-error injected by vite
 import { routes as apiRoutes } from '~apiRoutes'
@@ -28,23 +30,31 @@ export async function handler(req, res) {
     const matchedInAPI = apiRoutes.find(d => {
       return d.regex.pattern.test(baseURL)
     })
+    const modifiableContext = {
+      req: req,
+      res: res,
+    }
     if (matchedInAPI) {
       const module = await matchedInAPI.module()
       const routeParams = getRouteParams(baseURL, matchedInAPI)
       req.params = routeParams
+      await emitToHooked(CONSTANTS.beforeApiCall, modifiableContext)
       const handlerFn =
         'default' in module ? module.default : (_, res) => res.end()
       const serverHandler = async (req, res) => {
         await handlerFn(req, res)
+        await emitToHooked(CONSTANTS.afterApiCall, { req, res })
       }
       return {
         serverHandler,
       }
     }
+    await emitToHooked(CONSTANTS.beforeApiCall, modifiableContext)
     return {
-      serverHandler: async (_, res) => {
+      serverHandler: async (req, res) => {
         res.statusCode = 404
         res.end('Not found')
+        await emitToHooked(CONSTANTS.afterApiCall, { req, res })
       },
     }
   }
@@ -53,15 +63,24 @@ export async function handler(req, res) {
     return d.regex.pattern.test(baseURL)
   })
 
+  const pageContext = {
+    req,
+  }
+
   if (matchedInPages) {
     const routeParams = getRouteParams(baseURL, matchedInPages)
 
     // @ts-expect-error
     global.location = new URL(req.url, 'http://localhost')
 
-    const rendered = await renderToStringAsync(h(App, { url: req.url }), {})
+    await emitToHooked(CONSTANTS.beforePageRender, pageContext)
 
-    const htmlString = HTMLTemplate({
+    const rendered = await renderToStringAsync(
+      h(App, { url: pageContext.req.url }),
+      {}
+    )
+
+    let htmlString = HTMLTemplate({
       metas,
       links,
       title,
@@ -73,20 +92,28 @@ export async function handler(req, res) {
       body: rendered,
     })
 
+    pageContext.html = htmlString
+    await emitToHooked(CONSTANTS.afterPageRender, pageContext)
+    htmlString = pageContext.html
     return {
       html: htmlString,
       pageRoute: matchedInPages.route,
     }
   }
 
+  await emitToHooked(CONSTANTS.beforePageRender, pageContext)
+  let htmlString = HTMLTemplate({
+    metas,
+    links,
+    title,
+    lang,
+    body: '404 | Not Found',
+  })
+  pageContext.html = htmlString
+  await emitToHooked(CONSTANTS.afterPageRender, pageContext)
+
   return {
-    html: HTMLTemplate({
-      metas,
-      links,
-      title,
-      lang,
-      body: '404 | Not Found',
-    }),
+    html: pageContext.html,
   }
 }
 

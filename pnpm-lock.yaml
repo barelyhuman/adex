@@ -163,6 +163,25 @@ importers:
         specifier: ^6.4.3
         version: 6.4.3(@types/node@22.13.16)(jiti@2.6.1)(lightningcss@1.33.0)(yaml@2.9.0)
 
+  adex/tests/fixtures/hooks:
+    dependencies:
+      '@preact/preset-vite':
+        specifier: 'catalog:'
+        version: 2.10.5(@babel/core@7.29.7)(preact@10.24.2)(rollup@4.60.1)(vite@6.4.3(@types/node@22.13.16)(jiti@2.6.1)(lightningcss@1.33.0)(yaml@2.9.0))
+      adex:
+        specifier: workspace:*
+        version: link:../../..
+      adex-adapter-node:
+        specifier: workspace:*
+        version: link:../../../../packages/adapters/node
+      preact:
+        specifier: 'catalog:'
+        version: 10.24.2
+    devDependencies:
+      vite:
+        specifier: ^6.4.3
+        version: 6.4.3(@types/node@22.13.16)(jiti@2.6.1)(lightningcss@1.33.0)(yaml@2.9.0)
+
   adex/tests/fixtures/minimal:
     dependencies:
       '@preact/preset-vite':
