@@ -19,7 +19,6 @@ export function hook(eventName, handler) {
 }
 
 /**
- * Register a hook to run before page render
  * @param {(context: any) => any|Promise<any>} fn
  */
 export function beforePageRender(fn) {
@@ -27,7 +26,6 @@ export function beforePageRender(fn) {
 }
 
 /**
- * Register a hook to run after page render
  * @param {(context: any) => any|Promise<any>} fn
  */
 export function afterPageRender(fn) {
@@ -35,7 +33,6 @@ export function afterPageRender(fn) {
 }
 
 /**
- * Register a hook to run before API call
  * @param {(context: any) => any|Promise<any>} fn
  */
 export function beforeAPICall(fn) {
@@ -43,7 +40,6 @@ export function beforeAPICall(fn) {
 }
 
 /**
- * Register a hook to run after API call
  * @param {(context: any) => any|Promise<any>} fn
  */
 export function afterAPICall(fn) {
@@ -51,13 +47,16 @@ export function afterAPICall(fn) {
 }
 
 /**
- * Emit an event to all registered hooks
  * @param {symbol} eventName
  * @param {any} data
  */
 export async function emitToHooked(eventName, data) {
   const handlers = hookListeners.get(eventName) || []
-  for (let handler of handlers) {
+  for (const handler of handlers) {
     await handler(data)
   }
+}
+
+export function resetHooks() {
+  hookListeners.clear()
 }

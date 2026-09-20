@@ -1,12 +1,13 @@
-import { IncomingMessage } from 'node:http'
+import { IncomingMessage, ServerResponse } from 'node:http'
 
-export type Context = {
+export type PageContext = {
   req: IncomingMessage
-  html: string
+  html?: string
 }
 
 export type APIContext = {
   req: IncomingMessage
+  res: ServerResponse
 }
 
 export declare const CONSTANTS: {
@@ -22,19 +23,21 @@ export declare function hook(
 ): void
 
 export declare function beforePageRender(
-  fn: (ctx: Omit<Context, 'html'>) => void
-): Promise<void>
+  fn: (ctx: Omit<PageContext, 'html'>) => void | Promise<void>
+): void
 
 export declare function afterPageRender(
-  fn: (ctx: Context) => void
-): Promise<void>
+  fn: (ctx: PageContext & { html: string }) => void | Promise<void>
+): void
 
 export declare function beforeAPICall(
-  fn: (ctx: APIContext) => void
-): Promise<void>
+  fn: (ctx: APIContext) => void | Promise<void>
+): void
 
 export declare function afterAPICall(
-  fn: (ctx: APIContext) => void
-): Promise<void>
+  fn: (ctx: APIContext) => void | Promise<void>
+): void
 
 export declare function emitToHooked(eventName: any, data: any): Promise<void>
+
+export declare function resetHooks(): void

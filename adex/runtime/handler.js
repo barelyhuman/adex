@@ -1,11 +1,12 @@
-import { CONSTANTS, emitToHooked } from 'adex/hook'
+import { CONSTANTS, emitToHooked, resetHooks } from 'adex/hooks'
 import { prepareRequest, prepareResponse } from 'adex/http'
 import { toStatic } from 'adex/ssr'
 import { renderToStringAsync } from 'adex/utils/isomorphic'
 import { h } from 'preact'
 
-// @ts-expect-error injected by vite
-import { App } from 'virtual:adex:client'
+resetHooks()
+await import('virtual:adex:hooks')
+const { App } = await import('virtual:adex:client')
 
 // @ts-expect-error injected by vite
 import { routes as apiRoutes } from '~apiRoutes'
@@ -29,14 +30,14 @@ export async function handler(req, res) {
     const matchedInAPI = apiRoutes.find(d => {
       return d.regex.pattern.test(baseURL)
     })
+    const modifiableContext = {
+      req: req,
+      res: res,
+    }
     if (matchedInAPI) {
       const module = await matchedInAPI.module()
       const routeParams = getRouteParams(baseURL, matchedInAPI)
       req.params = routeParams
-      const modifiableContext = {
-        req: req,
-        res: res,
-      }
       await emitToHooked(CONSTANTS.beforeApiCall, modifiableContext)
       const handlerFn =
         'default' in module ? module.default : (_, res) => res.end()
@@ -48,8 +49,9 @@ export async function handler(req, res) {
         serverHandler,
       }
     }
+    await emitToHooked(CONSTANTS.beforeApiCall, modifiableContext)
     return {
-      serverHandler: async (_, res) => {
+      serverHandler: async (req, res) => {
         res.statusCode = 404
         res.end('Not found')
         await emitToHooked(CONSTANTS.afterApiCall, { req, res })
@@ -61,19 +63,20 @@ export async function handler(req, res) {
     return d.regex.pattern.test(baseURL)
   })
 
+  const pageContext = {
+    req,
+  }
+
   if (matchedInPages) {
     const routeParams = getRouteParams(baseURL, matchedInPages)
 
     // @ts-expect-error
     global.location = new URL(req.url, 'http://localhost')
 
-    const modifiableContext = {
-      req: req,
-    }
-    await emitToHooked(CONSTANTS.beforePageRender, modifiableContext)
+    await emitToHooked(CONSTANTS.beforePageRender, pageContext)
 
     const rendered = await renderToStringAsync(
-      h(App, { url: modifiableContext.req.url }),
+      h(App, { url: pageContext.req.url }),
       {}
     )
 
@@ -89,23 +92,28 @@ export async function handler(req, res) {
       body: rendered,
     })
 
-    modifiableContext.html = htmlString
-    await emitToHooked(CONSTANTS.afterPageRender, modifiableContext)
-    htmlString = modifiableContext.html
+    pageContext.html = htmlString
+    await emitToHooked(CONSTANTS.afterPageRender, pageContext)
+    htmlString = pageContext.html
     return {
       html: htmlString,
       pageRoute: matchedInPages.route,
     }
   }
 
+  await emitToHooked(CONSTANTS.beforePageRender, pageContext)
+  let htmlString = HTMLTemplate({
+    metas,
+    links,
+    title,
+    lang,
+    body: '404 | Not Found',
+  })
+  pageContext.html = htmlString
+  await emitToHooked(CONSTANTS.afterPageRender, pageContext)
+
   return {
-    html: HTMLTemplate({
-      metas,
-      links,
-      title,
-      lang,
-      body: '404 | Not Found',
-    }),
+    html: pageContext.html,
   }
 }
 
